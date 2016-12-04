@@ -1,0 +1,6 @@
+- name: running a test task
+  shell: pip list
+  register: out
+
+
+

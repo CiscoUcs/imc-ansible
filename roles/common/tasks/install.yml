@@ -1,0 +1,11 @@
+
+- name: check if imcsdk is installed
+  shell: python -c "import imcsdk"
+  register: output
+  ignore_errors: yes
+  changed_when: False
+
+- name: install imcsdk
+  pip:
+    name: imcsdk
+  when: output.rc != 0
