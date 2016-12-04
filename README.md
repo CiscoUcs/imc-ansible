@@ -1,5 +1,5 @@
 ```
-➔ ansible-playbook -i hosts site.yml -k
+➔ ansible-playbook -i inventory site.yml -k
 SSH password:
 
 PLAY [all]
