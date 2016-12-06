@@ -1,2 +1,6 @@
 ---
 
+boot_devices:
+  - {"order":"1", "type":"hdd", "name":"hdd"}
+  - {"order":"2", "type":"pxe", "name":"pxe"}
+  - {"order":"3", "type":"iscsi", "name":"iscsi"}
