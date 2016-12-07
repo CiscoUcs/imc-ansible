@@ -68,20 +68,11 @@ def login(module):
 
 
 def logout(module, imc_server):
-    # server connection handles can be created in one of the two ways,
-    # 1: user provides `server` as a ansible variable. `server` is a serialized
-    #     handle. The serialized server handle is obtained as an output of
-    #     `cisco_imc_login` module.
-    # 2: user provides `ip/username/password` as ansible variables. In this case,
-    #       the module will trigger a login.
-    #
-    # Every module that triggers a login via #2, should take care of logging out
-    # When login itself was created via `cisco_imc_login` module, then the
-    # playbook must end with invocation of `cisco_imc_logout`.
-
     ansible = module.params
     server = ansible.get('server')
     if server:
+        # we used a pre-existing handle from another task.
+        # do not logout
         return False
 
     if imc_server:
@@ -90,8 +81,17 @@ def logout(module, imc_server):
     return False
 
 
-def boot_order_policy_exists(server, module):
-    return False
+def policy_exists(server, module):
+    from imcsdk.apis.server.bios import boot_order_precision_exists
+
+    ansible = module.params
+    match, msg = boot_order_precision_exists(handle=server,
+                                          reboot_on_update=ansible["reboot_on_update"],
+                                          configured_boot_mode=ansible["configured_boot_mode"],
+                                          boot_devices=ansible["boot_devices"],
+                                          server_id=ansible["server_id"])
+    #print(msg)
+    return match
 
 
 def boot_order_policy(module):
@@ -100,28 +100,25 @@ def boot_order_policy(module):
     results = {}
     err = False
 
-    server = login(module)
-
     try:
-        ansible = module.params
-        policy_exists = boot_order_policy_exists(server, module)
-        if module.check_mode or policy_exists:
-            module.exit_json(changed=not policy_exists)
+        server = login(module)
 
-        bds = []
-        bd_list = ansible['boot_devices']
-        for bd in bd_list:
-            bds.append((bd["order"], bd["type"], bd["name"]))
+        ansible = module.params
+        _exists = policy_exists(server, module)
+        if module.check_mode or _exists:
+            module.exit_json(changed=not _exists)
 
         set_boot_order_precision(handle=server,
-                                 boot_devices=bds,
-                                 reboot_on_update=ansible['reboot_on_update'],
-                                 server_id=ansible['server_id'])
+                                    boot_devices=ansible['boot_devices'],
+                                    reboot_on_update=ansible['reboot_on_update'],
+                                    configured_boot_mode=ansible['configured_boot_mode'],
+                                    server_id=ansible['server_id'])
 
         results["changed"] = True
         logout(module, server)
     except Exception as e:
         err = True
+        results["exception"] = str(e)
         results["msg"] = str(e)
         results["changed"] = False
         logout(module, server)
@@ -134,10 +131,14 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             boot_devices=dict(required=True, type='list'),
-            secure_boot=dict(required=False, default=False, type='bool'),
+            configured_boot_mode=dict(required=False, default="Legacy", type='str'),
             reboot_on_update=dict(required=False, default="no", choices=["yes", "no"]),
             server_id=dict(required=False, default=1, type='int'),
+
+            # ImcHandle
             server=dict(required=False, type='dict'),
+
+            # Imc server credentials
             ip=dict(required=False, type='str'),
             username=dict(required=False, default="admin", type='str'),
             password=dict(required=False, type='str'),
