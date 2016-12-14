@@ -2,9 +2,19 @@
 # This role contains task for configuring boot order
 
 - name: set boot order
-  cisco_imc_boot_order:
+  cisco_imc_boot_order_precision:
     boot_devices: "{{ boot_devices }}"
-    ip: "192.168.1.1"
-    username: "admin"
-    password: "password"
+    ip: "{{ imc_ip }}"
+    username: "{{ imc_username }}"
+    password: "{{ imc_password }}"
+
+- name: set boot order alternate
+  cisco_imc_boot_order_precision:
+    boot_devices:
+      - {"order":"1", "type":"hdd", "name":"hdd"}
+      - {"order":"2", "type":"pxe", "name":"pxe2"}
+      - {"order":"3", "type":"pxe", "name":"pxe"}
+    ip: "{{ imc_ip }}"
+    username: "{{ imc_username }}"
+    password: "{{ imc_password }}"
 
