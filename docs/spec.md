@@ -148,7 +148,11 @@ proxy
 ```
 
 #### 4.1.1 single login/logout with multiple tasks
-When using a playbook with multiple tasks, a user can start with `cisco_imc_login` and save(`register`) the ouput to `server_out` variable. The `server_out.handle` variable can then be passed to the consecutive tasks as input parameter. The playbook can finish with `cisco_imc_logout` which also takes `server_out.handle` as input.
+When using a playbook with multiple tasks, a user can start with `cisco_imc_login` and save(`register`) the ouput to `server_out` variable. The `server_out.handle` variable can then be passed to the consecutive tasks as input parameter. 
+
+The playbook can finish with `cisco_imc_logout` which takes `server_out.handle` as input.
+
+If a login was done via `cisco_imc_login` then a `cisco_imc_logout` must be present in the playbook.
 
 ```
 - name: login to server
