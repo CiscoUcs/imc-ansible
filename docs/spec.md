@@ -89,7 +89,11 @@ These are settings that an administrator would need to configure prior to bring 
 				Specifies the server_id, required for UCS 3260 platform. 
 				This is not required for classic IMC platforms.
 				default: 1
-					
+
+
+		imcsdk api sdk:
+			imcsdk.apis.server.bios.boot_order_precision_set
+			imcsdk.apis.server.bios.boot_order_precision_exists								
 		
 1. **`cisco_imc_boot_order_policy`**
 
