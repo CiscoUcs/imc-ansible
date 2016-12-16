@@ -91,7 +91,7 @@ These are settings that an administrator would need to configure prior to bring 
 				default: 1
 
 
-		imcsdk api sdk:
+		imcsdk apis:
 			imcsdk.apis.server.bios.boot_order_precision_set
 			imcsdk.apis.server.bios.boot_order_precision_exists								
 		
