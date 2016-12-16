@@ -33,11 +33,13 @@ These are settings that an administrator would need to configure prior to bring 
 
 ### 2.1.6 KVM
 
-### 2.1.7 CIMC properties (hostname)
+### 2.1.7 Vmedia
 
-### 2.1.8 SNMP (optional)
+### 2.1.8 CIMC properties (hostname)
 
-### 2.1.9 syslog (optional)
+### 2.1.9 SNMP (optional)
+
+### 2.1.10 syslog (optional)
 
 
 
