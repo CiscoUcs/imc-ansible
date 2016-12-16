@@ -100,13 +100,113 @@ These are settings that an administrator would need to configure prior to bring 
 1. **`cisco_imc_boot_order_policy`**
 
 
-
 ### 2.3.2 BIOS tokens
-
 
 
 ### 2.3.3 Storage
 
+1. **`cisco_imc_virtual_drive`**
+	
+		**CHECK**
+			- Does size needs to be specified always. or would it get auto-filled by the back-end based on number and size of drives
+			- Any better way to specify drive_group?
+			- Verify that drive_group needs to be the only mandatory parameter on the SDK API for VD creation
+	
+
+		Input Params:
+			raid_level:
+				description: Select the RAID level for the new virtual drives. 
+								This can be one of the following,
+									Raid 0 — Simple striping.
+									Raid 1 — Simple mirroring.
+									Raid 5 — Striping with parity.
+									Raid 6 — Striping with two parity drives.
+									Raid 10 — Spanned mirroring.
+									Raid 50 — Spanned striping with parity.
+									Raid 60 — Spanned striping with two parity drives.
+				choices: ["0", "1", "10", "5", "50", "6", "60"]
+				default: "0"
+				required: False
+
+			drive_group:
+				description: A list of drive groups
+				required: True
+
+			virtual_drive_name:
+				description: name of the virtual drive
+				required: False
+
+			access_policy:
+				description: Defines the host access level to the virtual drive.
+							   This can be one of the following,
+									"read-write" — Enables host to perform read-write on the VD.
+									"read-only" — Host can only read from the VD.
+									"blocked" — Host can neither read nor write to the VD.
+				choices: ["blocked", "read-only", "read-write"]
+				default: "read-write"
+				required: False
+			
+			read_policy:
+				description: The read-ahead cache mode.
+				choices: ["always-read-ahead", "no-read-ahead"]
+				default: "no-read-ahead"
+				required: False
+				
+			cache_policy:
+				description: The cache policy used for buffering reads.
+				choices: ["cached-io", "direct-io"]
+				default: "direct-io"
+				required: False
+				
+			disk_cache_policy:
+				description: The cache policy used for buffering reads.
+								This can be one of the following,
+									"unchanged" — The disk cache policy is unchanged.
+									"enabled" — Allows IO caching on the disk.
+									"disabled" — Disallows disk caching.
+				choices: ["disabled", "enabled", "unchanged"]
+				default: "unchanged"
+				required: False			
+
+			write_policy:
+				description: This can be one of the following,
+								Write Through — Data is written through the cache and to the physical drives. Performance is improved, because subsequent reads of that data can be satisfied from the cache.
+								Write Back — Data is stored in the cache, and is only written to the physical drives when space in the cache is needed. Virtual drives requesting this policy fall back to Write Through caching when the BBU cannot guarantee the safety of the cache in the event of a power failure.
+								Write Back Bad BBU — With this policy, write caching remains Write Back even if the battery backup unit is defective or discharged.
+				choices: ["Always Write Back", "Write Back Good BBU", "Write Through", "always-write-back", "write-back-good-bbu", "write-through"]
+				default: "write-through"
+				required: False
+
+			strip_size:
+				description: The size of each strip
+				choices: ["1024k", "128k", "16k", "256k", "32k", "512k", "64k", "8k"]
+				default: "64k"
+				required: False
+
+			size:
+				description: The size of the virtual drive you want to create. Enter a value and select one of the following units - MB, GB, TB
+				required: False
+
+			admin_action:
+				description: todo - classic only property - enables SED! ???
+				choices: ["enable-self-encrypt"]
+				required: False
+
+		imcsdk apis:
+			imcsdk.apis.server.storage.vd_create
+			imcsdk.apis.server.storage.vd_delete
+			imcsdk.apis.server.storage.vd_exists
+			imcsdk.apis.server.storage.vd_init
+			imcsdk.apis.server.storage.vd_boot_drive_set
+			imcsdk.apis.server.storage.vd_transport_ready_set			
+
+### 2.3.4 Network
+
+1. **`cisco_imc_vic_adapter`**
+
+1. **`cisco_imc_vnic`**
+
+1. **`cisco_imc_vhba`**
 
 
 ## 3. Roles
