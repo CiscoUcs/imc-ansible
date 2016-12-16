@@ -192,6 +192,12 @@ These are settings that an administrator would need to configure prior to bring 
 				choices: ["enable-self-encrypt"]
 				required: False
 
+			state:
+				description: Defines if the VD should be created or deleted
+				choices: ["present", "absent"]
+				default: "present"
+				required: True
+
 		imcsdk apis:
 			imcsdk.apis.server.storage.vd_create
 			imcsdk.apis.server.storage.vd_delete
