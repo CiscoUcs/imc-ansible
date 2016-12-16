@@ -1,33 +1,24 @@
 ```
-➔ ansible-playbook -i inventory site.yml -k
-SSH password:
+➔ ansible-playbook -i inventory site.yml
 
-PLAY [all]
-*******************************************************************************************************
+PLAY [127.0.0.1] ****************************************************************************
 
-TASK [Gathering Facts]
-*******************************************************************************************
+TASK [Gathering Facts] **********************************************************************
 ok: [localhost]
 
-TASK [common : check if imcsdk is installed]
-*********************************************************************
-fatal: [localhost]: FAILED! => {"changed": false, "cmd": "python -c \"import
-imcsdk\", "delta": "0:00:00.011486", "end": "2016-12-04 12:49:48.712304",
-"failed": true, "rc": 1, "start": "2016-12-04 12:49:48.700818", "stderr":
-"Traceback (most recent call last):\n  File \"<string>\", line 1, in
-<module>\nImportError: No module named imcsdk", "stdout": ", "stdout_lines": [], "warnings": []}
-...ignoring
+TASK [common : check if imcsdk is installed] ************************************************
+ok: [localhost]
 
-TASK [common : install imcsdk]
-***********************************************************************************
+TASK [common : install imcsdk] **************************************************************
+skipping: [localhost]
+
+TASK [boot : set boot order] ****************************************************************
 changed: [localhost]
 
-TASK [boot : running a test task]
-********************************************************************************
+TASK [boot : set boot order alternate] ******************************************************
 changed: [localhost]
 
-PLAY RECAP
-*******************************************************************************************************
+PLAY RECAP **********************************************************************************
 localhost                  : ok=4    changed=2    unreachable=0    failed=0
 
 ```

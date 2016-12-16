@@ -9,7 +9,7 @@ description:
   - Set boot order precision for a Cisco IMC server
 options:
   boot_devices:
-    description: dictionary {"order":"", "type": "", "name":""}
+    description: dictionary {"order":"", "device-type": "", "name":""}
     required: true
   configured_boot_mode:
     description: Configure boot mode
@@ -39,9 +39,9 @@ EXAMPLES = '''
 - name: Set the boot order precision
   cisco_imc_boot_order_precision:
     boot_devices:
-      - {"order":"1", "type":"hdd", "name":"hdd"}
-      - {"order":"2", "type":"pxe", "name":"pxe"}
-      - {"order":"3", "type":"pxe", "name":"pxe2"}
+      - {"order":"1", "device-type":"hdd", "name":"hdd"}
+      - {"order":"2", "device-type":"pxe", "name":"pxe"}
+      - {"order":"3", "device-type":"pxe", "name":"pxe2"}
     ip: "10.105.219.220"
     username: "admin"
     password: "qazwsx"
@@ -97,23 +97,22 @@ def policy_exists(server, module):
 
     if err:
         print(err)
-    return match, err
+    return match
 
 
-def boot_order_precision(module):
-    from imcsdk.apis.server.bios import set_boot_order_precision as \
+def boot_order_precision(server, module):
+    from imcsdk.apis.server.bios import boot_order_precision_set as \
                                         set_boot_order
 
     results = {}
     err = False
 
     try:
-        server = login(module)
-
         ansible = module.params
         _exists = policy_exists(server, module)
         if module.check_mode or _exists:
-            module.exit_json(changed=not _exists)
+            results["changed"] = not _exists
+            return results, False
 
         set_boot_order(handle=server,
                        boot_devices=ansible['boot_devices'],
@@ -123,12 +122,10 @@ def boot_order_precision(module):
                        server_id=ansible['server_id'])
 
         results["changed"] = True
-        logout(module, server)
     except Exception as e:
         err = True
         results["msg"] = str(e)
         results["changed"] = False
-        logout(module, server)
 
     return results, err
 
@@ -160,7 +157,9 @@ def main():
         supports_check_mode=True
     )
 
-    results, err = boot_order_precision(module)
+    server = login(module)
+    results, err = boot_order_precision(server, module)
+    logout(module, server)
     if err:
         module.fail_json(**results)
     module.exit_json(**results)

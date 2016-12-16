@@ -11,9 +11,9 @@
 - name: set boot order alternate
   cisco_imc_boot_order_precision:
     boot_devices:
-      - {"order":"1", "type":"hdd", "name":"hdd"}
-      - {"order":"2", "type":"pxe", "name":"pxe2"}
-      - {"order":"3", "type":"pxe", "name":"pxe"}
+      - {"order":"1", "device-type":"hdd", "name":"hdd"}
+      - {"order":"2", "device-type":"pxe", "name":"pxe2"}
+      - {"order":"3", "device-type":"pxe", "name":"pxe"}
     ip: "{{ imc_ip }}"
     username: "{{ imc_username }}"
     password: "{{ imc_password }}"
