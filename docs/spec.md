@@ -1,6 +1,6 @@
 # imc-ansible
 
-## introduction
+## 1. Introduction
 `imc-ansible` is a ansible module for Cisco UCS Integrated Management Controller line of servers. This document servers as a functional specification for `imc-ansible`.
 
 Cisco IMC server configuration is divided into 3 flows,
@@ -15,46 +15,47 @@ Cisco IMC server configuration is divided into 3 flows,
 This module only targets the later 2 parts. The first part needs to be done manually by the user.
 
 
-# configuration
-The sections below describe a typical configuration flow that a customer follows. 
+## 2. Configuration
+The sections below describe a typical configuration flow that a customer follows. Every section also has the ansible modules that are implemented for it.
 
-## admin configuration
+## 2.1 admin configuration
 These are settings that an administrator would need to configure prior to bring a server up.
 
-### users
+### 2.1.1 users
 
-### roles
+### 2.1.2 roles
 
-### NTP
+### 2.1.3 NTP
 
-### authentication
+### 2.1.4 authentication
 
-### SNMP (optional)
+### 2.1.5 SOL
 
-### syslog (optional)
+### 2.1.6 KVM
 
-### CIMC properties (hostname)
+### 2.1.7 CIMC properties (hostname)
 
-### SOL
+### 2.1.8 SNMP (optional)
 
-### KVM
+### 2.1.9 syslog (optional)
 
 
 
-## Firmware update
+## 2.2 Firmware update
 
-### HUU
+### 2.2.1 HUU
 
 1. **`cisco_imc_firmware`**
 
 
-## Server Profile
+## 2.3 Server Profile
 
-### BIOS boot order
+### 2.3.1 BIOS boot order
 
 1. **`cisco_imc_boot_order_precision`**
 
-		Configures the boot order precision on a Cisco IMC server. It allows configuration of first level and second level boot order.
+		Configures the boot order precision on a Cisco IMC server. 
+		It allows configuration of first level and second level boot order.
 		
 		Input Params:
 			boot_devices:
@@ -81,7 +82,9 @@ These are settings that an administrator would need to configure prior to bring 
 				default: "no"
 
 			reapply
-
+				# todo: vvb
+				# what does this variable mean?? is it required to be exposed via ansible?
+				
 			server_id
 				Specifies the server_id, required for UCS 3260 platform. 
 				This is not required for classic IMC platforms.
@@ -92,9 +95,101 @@ These are settings that an administrator would need to configure prior to bring 
 
 
 
-### BIOS tokens
+### 2.3.2 BIOS tokens
 
 
 
-### Storage
+### 2.3.3 Storage
 
+
+
+## 3. Roles
+Ansible roles are a method of structuring complex monolithic playbooks into different roles that may be included by other playbooks.
+
+The roles exposed by `imc-ansible` modules are,
+
+### 3.1 `common`
+
+### 3.2 `boot`
+
+### 3.3 `storage`
+
+### 3.4 `vnic`
+
+### 3.5 `vhba`
+
+
+
+
+## 4. Requirements
+
+### 4.1 standalone execution
+A user should be able to execute a single module individually. This requires every module to also have login and logout capabilities. To accomodate this, every module except `cisco_imc_login` and `cisco_imc_logout` will accept the following inputs,
+
+```
+server:
+	server connection handle from a `cisco_imc_login` task
+```	
+	
+
+```
+ip:
+	hostname/ip of the server
+username:
+	username to be used for login
+password:
+	password for user specified above
+port:
+	port to be used to login
+secure:
+	use https connection
+proxy
+	specifies a proxy server url, if the connection needs a proxy
+```
+
+#### 4.1.1 single login/logout with multiple tasks
+When using a playbook with multiple tasks, a user can start with `cisco_imc_login` and save(`register`) the ouput to `server_out` variable. The `server_out.handle` variable can then be passed to the consecutive tasks as input parameter. The playbook can finish with `cisco_imc_logout` which also takes `server_out.handle` as input.
+
+```
+- name: login to server
+  cisco_imc_login:
+    - ip: "192.168.1.1"
+    - username: "admin"
+    - password: "password"
+  register: server_out
+
+- name: configure boot order precision
+  cisco_imc_boot_order_precision:
+    - boot_devices:
+        - {"order": "1", "device-type": "pxe", "name": "pxe"}
+        - {"order": "2", "device-type": "lan", "name": "lan"}
+    - boot_mode: "Legacy"
+    - server: {{ server_out.handle }}
+
+# many other tasks..
+# ...
+# ...
+
+
+- name: logout from server
+  cisco_imc_logout:
+    - server: {{ server_out.handle }}
+  register: server
+    
+```
+
+
+#### 4.1.2 login/logout per task
+To be able to support running a module individually, we also accept the credentials directly in a task. we use these to create a session if the `server` parameter is not defined.
+
+```
+- name: configure boot order precision
+  cisco_imc_boot_order_precision:
+    - boot_devices:
+        - {"order": "1", "device-type": "pxe", "name": "pxe"}
+        - {"order": "2", "device-type": "lan", "name": "lan"}
+    - boot_mode: "Legacy"
+    - ip: "192.168.1.1"
+    - username: "admin"
+    - password: "password"
+```
