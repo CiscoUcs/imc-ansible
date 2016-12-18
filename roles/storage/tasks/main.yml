@@ -1,0 +1,28 @@
+---
+# This role contains task for configuring virtual drives
+
+- name: create virtual drive
+  cisco_imc_virtual_drive:
+    raid_level: 0
+    drive_group: [[1]]
+    controller_slot: "MEZZ"
+    ip: "{{ imc_ip }}"
+    username: "{{ imc_username }}"
+    password: "{{ imc_password }}"
+    state: "present"
+    print_exception: True
+
+- name: delete virtual drive
+  cisco_imc_virtual_drive:
+    raid_level: 0
+    drive_group: [[1]]
+    controller_slot: "MEZZ"
+    ip: "{{ imc_ip }}"
+    username: "{{ imc_username }}"
+    password: "{{ imc_password }}"
+    state: "absent"
+    print_exception: True
+
+
+
+

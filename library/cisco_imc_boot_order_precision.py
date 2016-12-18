@@ -42,9 +42,9 @@ EXAMPLES = '''
       - {"order":"1", "device-type":"hdd", "name":"hdd"}
       - {"order":"2", "device-type":"pxe", "name":"pxe"}
       - {"order":"3", "device-type":"pxe", "name":"pxe2"}
-    ip: "10.105.219.220"
+    ip: "192.168.1.1"
     username: "admin"
-    password: "qazwsx"
+    password: "password"
 '''
 
 

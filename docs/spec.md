@@ -56,21 +56,21 @@ These are settings that an administrator would need to configure prior to bring 
 
 1. **`cisco_imc_boot_order_precision`**
 
-		Configures the boot order precision on a Cisco IMC server. 
+		Configures the boot order precision on a Cisco IMC server.
 		It allows configuration of first level and second level boot order.
-		
+
 		Input Params:
 			boot_devices:
 				Takes input dictionaries that specify the boot order.
 				First level boot order is restricted to the type of the device.
-				order, device-type, name together form the first level boot order specification. 
+				order, device-type, name together form the first level boot order specification.
 				Second level boot order delves deeper into a given device type.
 				Parameters for second level boot order specification are category specifc.
 				for example, pxe type can take slot, port as second level parameters.
 				example input:
-					- {"order": '1', "device-type": "hdd", "name": "hdd"},                    
+					- {"order": '1', "device-type": "hdd", "name": "hdd"},
     				- {"order": '2', "device-type": "pxe", "name": "pxe", "slot": "10", "port": "100"},
-    				- {"order": '3', "device-type": "pxe", "name": "pxe1"},                   
+    				- {"order": '3', "device-type": "pxe", "name": "pxe1"},
     				- {"order": '4', "device-type": "usb", "name": "usb0", "subtype": "usb-cd"}
 
 			configured_boot_mode:
@@ -86,17 +86,17 @@ These are settings that an administrator would need to configure prior to bring 
 			reapply
 				# todo: vvb
 				# what does this variable mean?? is it required to be exposed via ansible?
-				
+
 			server_id
-				Specifies the server_id, required for UCS 3260 platform. 
+				Specifies the server_id, required for UCS 3260 platform.
 				This is not required for classic IMC platforms.
 				default: 1
 
 
 		imcsdk apis:
 			imcsdk.apis.server.bios.boot_order_precision_set
-			imcsdk.apis.server.bios.boot_order_precision_exists								
-		
+			imcsdk.apis.server.bios.boot_order_precision_exists
+
 1. **`cisco_imc_boot_order_policy`**
 
 
@@ -106,16 +106,16 @@ These are settings that an administrator would need to configure prior to bring 
 ### 2.3.3 Storage
 
 1. **`cisco_imc_virtual_drive`**
-	
+
 		**CHECK**
 			- Does size needs to be specified always. or would it get auto-filled by the back-end based on number and size of drives
 			- Any better way to specify drive_group?
 			- Verify that drive_group needs to be the only mandatory parameter on the SDK API for VD creation
-	
+
 
 		Input Params:
 			raid_level:
-				description: Select the RAID level for the new virtual drives. 
+				description: Select the RAID level for the new virtual drives.
 								This can be one of the following,
 									Raid 0 — Simple striping.
 									Raid 1 — Simple mirroring.
@@ -145,19 +145,19 @@ These are settings that an administrator would need to configure prior to bring 
 				choices: ["blocked", "read-only", "read-write"]
 				default: "read-write"
 				required: False
-			
+
 			read_policy:
 				description: The read-ahead cache mode.
 				choices: ["always-read-ahead", "no-read-ahead"]
 				default: "no-read-ahead"
 				required: False
-				
+
 			cache_policy:
 				description: The cache policy used for buffering reads.
 				choices: ["cached-io", "direct-io"]
 				default: "direct-io"
 				required: False
-				
+
 			disk_cache_policy:
 				description: The cache policy used for buffering reads.
 								This can be one of the following,
@@ -166,7 +166,7 @@ These are settings that an administrator would need to configure prior to bring 
 									"disabled" — Disallows disk caching.
 				choices: ["disabled", "enabled", "unchanged"]
 				default: "unchanged"
-				required: False			
+				required: False
 
 			write_policy:
 				description: This can be one of the following,
@@ -204,7 +204,7 @@ These are settings that an administrator would need to configure prior to bring 
 			imcsdk.apis.server.storage.vd_exists
 			imcsdk.apis.server.storage.vd_init
 			imcsdk.apis.server.storage.vd_boot_drive_set
-			imcsdk.apis.server.storage.vd_transport_ready_set			
+			imcsdk.apis.server.storage.vd_transport_ready_set
 
 ### 2.3.4 Network
 
@@ -241,8 +241,8 @@ A user should be able to execute a single module individually. This requires eve
 ```
 server:
 	server connection handle from a `cisco_imc_login` task
-```	
-	
+```
+
 
 ```
 ip:
@@ -260,7 +260,7 @@ proxy
 ```
 
 #### 4.1.1 single login/logout with multiple tasks
-When using a playbook with multiple tasks, a user can start with `cisco_imc_login` and save(`register`) the ouput to `server_out` variable. The `server_out.handle` variable can then be passed to the consecutive tasks as input parameter. 
+When using a playbook with multiple tasks, a user can start with `cisco_imc_login` and save(`register`) the ouput to `server_out` variable. The `server_out.handle` variable can then be passed to the consecutive tasks as input parameter.
 
 The playbook can finish with `cisco_imc_logout` which takes `server_out.handle` as input.
 
@@ -291,7 +291,7 @@ If a login was done via `cisco_imc_login` then a `cisco_imc_logout` must be pres
   cisco_imc_logout:
     - server: {{ server_out.handle }}
   register: server
-    
+
 ```
 
 
