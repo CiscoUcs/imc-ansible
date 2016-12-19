@@ -1,8 +1,10 @@
 ---
 
-- hosts: 127.0.0.1
+- hosts: imc
   connection: local
+  gather_facts: no
   roles:
   - common
   - boot
+  - storage
 
