@@ -1,10 +1,6 @@
 ---
 
 boot_devices:
-  - {"order":"1", "type":"hdd", "name":"hdd"}
-  - {"order":"2", "type":"pxe", "name":"pxe"}
-  - {"order":"3", "type":"pxe", "name":"pxe2"}
-
-imc_ip: 192.168.1.1
-imc_username: admin
-imc_password: password
+  - {"order":"1", "device-type":"hdd", "name":"hdd"}
+  - {"order":"2", "device-type":"pxe", "name":"pxe"}
+  - {"order":"3", "device-type":"pxe", "name":"pxe2"}

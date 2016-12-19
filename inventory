@@ -1,2 +1,2 @@
-[local]
-localhost ansible_ssh_host=127.0.0.1 host_key_checking=False
+[imc]
+colusa2 imc_ip=192.168.1.1 imc_username=admin imc_password=qazwsx
