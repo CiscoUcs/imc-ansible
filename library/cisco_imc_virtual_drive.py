@@ -161,10 +161,13 @@ def exists(server, module):
     if vd_name is None:
         vd_name = vd_name_derive(ansible["raid_level"],
                                  ansible["drive_group"])
-    return vd_exists(handle=server,
-                     controller_slot=ansible["controller_slot"],
-                     virtual_drive_name=vd_name,
-                     server_id=ansible['server_id'])
+    exists, err = vd_exists(handle=server,
+                            controller_slot=ansible["controller_slot"],
+                            virtual_drive_name=vd_name,
+                            server_id=ansible['server_id'])
+    if err:
+        print(err)
+    return exists
 
 
 def virtual_drive(server, module):
