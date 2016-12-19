@@ -152,7 +152,7 @@ def logout(module, imc_server):
 
 
 def exists(server, module):
-    from imcsdk.apis.server.storage import vd_query_by_name as vd_query
+    from imcsdk.apis.server.storage import virtual_drive_exists as vd_exists
     from imcsdk.apis.server.storage import vd_name_derive
 
     ansible = module.params
@@ -161,11 +161,10 @@ def exists(server, module):
     if vd_name is None:
         vd_name = vd_name_derive(ansible["raid_level"],
                                  ansible["drive_group"])
-    vd = vd_query(handle=server,
-                  controller_slot=ansible["controller_slot"],
-                  name=vd_name,
-                  server_id=ansible['server_id'])
-    return (vd is not None)
+    return vd_exists(handle=server,
+                     controller_slot=ansible["controller_slot"],
+                     virtual_drive_name=vd_name,
+                     server_id=ansible['server_id'])
 
 
 def virtual_drive(server, module):
