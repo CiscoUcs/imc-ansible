@@ -1,0 +1,40 @@
+---
+# This role contains task for configuring virtual drives
+
+- name: set password policy
+  cisco_imc_user_password_policy:
+    strong_password: "enabled"
+    ip: "{{ imc_ip }}"
+    username: "{{ imc_username }}"
+    password: "{{ imc_password }}"
+
+
+- name: create local user
+  cisco_imc_user:
+    name: "ansible-user"
+    pwd: "Nbv-12345"
+    priv: "admin"
+    state: "present"
+    ip: "{{ imc_ip }}"
+    username: "{{ imc_username }}"
+    password: "{{ imc_password }}"
+
+
+- name: delete local user
+  cisco_imc_user:
+    name: "ansible-user"
+    priv: "admin"
+    state: "absent"
+    ip: "{{ imc_ip }}"
+    username: "{{ imc_username }}"
+    password: "{{ imc_password }}"
+
+
+- name: reset password policy
+  cisco_imc_user_password_policy:
+    strong_password: "disabled"
+    ip: "{{ imc_ip }}"
+    username: "{{ imc_username }}"
+    password: "{{ imc_password }}"
+ 
+

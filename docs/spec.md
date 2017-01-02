@@ -23,6 +23,80 @@ These are settings that an administrator would need to configure prior to bring 
 
 ### 2.1.1 users
 
+1. **`cisco_imc_user_password_policy`**
+
+		Configures the password policy and password expiration policy for local users on a Cisco IMC server.
+		
+		Input Params:
+			strong_password:
+				description:
+				This will enable the strong password policy.
+				choices: ["enabled", "disabled"]
+				default: "disabled"
+				required: False
+						   		
+		   	password_expiry_duration:
+		   		description: Specifies in days when the password will expire when password expiry is enabled.
+		   		choices: [0-3650]
+		   		default: 0
+		   		required: False
+		   		
+		   	password_history:
+		   		description: Tracks password change history. Specifies in number of instances, the new password entered should not have been used in the past.
+		   		choices: [0-5]
+		   		default: 0
+		   		required: False
+		   		
+		   	password_notification_period:
+		   		description: Specifies the number of days the user will be notified before password expiry.
+		   		choices: [0-15]
+		   		default: 0
+		   		required: False
+		   	
+		   	password_grace_period:
+		   		description: Specifies the number of days the old password will still be valid after the password expiry.
+		   		choices: [0-5]
+		   		default: 0
+		   		required: False
+		
+		imcsdk apis:
+			imcsdk.apis.admin.user.strong_password_set
+			imcsdk.apis.admin.user.is_strong_password_set
+			imcsdk.apis.admin.user.password_expiration_set
+			imcsdk.apis.admin.user.password_expiration_exists		
+
+2. **`cisco_imc_user`**
+
+		Configures a local user on a Cisco IMC Server.
+		
+		Input Params:
+			name: 
+				description: Username for the local user
+				required: True
+			
+			pwd:
+				description: Password for the local user
+				required: False
+			
+			priv:
+				description: Privilege level of the local user
+				choices: ["admin", "read-only", "user"]
+				default: "read-only"
+				required: False
+				
+			state:
+				description: Used to create or delete the local user
+				choices: ["present", "absent"]
+				default: "present"
+				required: False
+				
+		imcsdk apis:
+			imcsdk.apis.admin.user.local_user_create
+			imcsdk.apis.admin.user.local_user_delete
+			imcsdk.apis.admin.user.local_user_exists
+			
+		
+
 ### 2.1.2 roles
 
 ### 2.1.3 NTP
