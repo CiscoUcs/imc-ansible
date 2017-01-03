@@ -10,8 +10,7 @@ description:
     - Configures the password policy and password expiration policy for local users on a Cisco IMC server.
 options:
     strong_password:
-        description:
-        This will enable the strong password policy.
+        description: This enables the strong password policy.
         choices: ["enabled", "disabled"]
         default: "disabled"
         required: False
@@ -39,12 +38,6 @@ options:
         choices: [0-5]
         default: 0
         required: False
-
-imcsdk apis:
-    imcsdk.apis.admin.user.strong_password_set
-    imcsdk.apis.admin.user.is_strong_password_set
-    imcsdk.apis.admin.user.password_expiration_set
-    imcsdk.apis.admin.user.password_expiration_exists
 
 requirements: ['imcsdk']
 author: "Swapnil Wagh(swwagh@cisco.com)"
@@ -101,8 +94,8 @@ def logout(module, imc_server):
 
 
 def password_policy_setup(server, module):
-    from imcsdk.apis.admin.user import strong_password_set, \
-                    is_strong_password_set
+    from imcsdk.apis.admin.user import strong_password_set
+    from imcsdk.apis.admin.user import is_strong_password_set
 
     ansible = module.params
     strong_password = ansible["strong_password"]
@@ -111,13 +104,14 @@ def password_policy_setup(server, module):
     if to_enable == is_enabled:
         return False
 
-    strong_password_set(server, enable=to_enable)
+    if not module.check_mode:
+        strong_password_set(server, enable=to_enable)
     return True
 
 
 def password_expiry_setup(server, module):
-    from imcsdk.apis.admin.user import password_expiration_set, \
-        password_expiration_exists
+    from imcsdk.apis.admin.user import password_expiration_set
+    from imcsdk.apis.admin.user import password_expiration_exists
 
     return False
 
@@ -138,6 +132,9 @@ def password_expiry_setup(server, module):
     if exists:
         return False
 
+    if module.check_mode:
+        return True
+
     password_expiration_set(
         server,
         password_expiry_duration=password_expiry_duration,
@@ -148,24 +145,18 @@ def password_expiry_setup(server, module):
 
 
 def setup(server, module):
-
     results = {}
     err = False
-    change_list = []
 
     try:
-        changed = password_policy_setup(server, module)
-        change_list.append(changed)
-        changed = password_expiry_setup(server, module)
-        change_list.append(changed)
-        results["changed"] = True in change_list
+        pp_changed = password_policy_setup(server, module)
+        pe_changed = password_expiry_setup(server, module)
+        results["changed"] = pp_changed or pe_changed
 
     except Exception as e:
         err = True
         results["msg"] = str(e)
         results["changed"] = False
-        server.logout()
-        raise
 
     return results, err
 
