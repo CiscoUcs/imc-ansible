@@ -2,48 +2,31 @@
 
 DOCUMENTATION = '''
 ---
-module: cisco_imc_user
-short_description: Configures a local user on a Cisco IMC Server
+module: cisco_imc_ntp
+short_description: Setup NTP on a Cisco IMC server.
 version_added: "0.9.0.0"
 description:
-    - Configures a local user on a Cisco IMC Server
-Input Params:
-    name:
-        description: Username for the local user
-        required: True
-
-    pwd:
-        description: Password for the local user
-        required: True
-
-    priv:
-        description: Privilege level of the local user
-        choices: ["admin", "read-only", "user"]
-        default: "read-only"
-        required: False
-
-    state:
-        description: Used to create or delete the local user
-        choices: ["present", "absent"]
-        default: "present"
-        required: False
-
-imcsdk apis:
-    imcsdk.apis.admin.user.local_user_create
-    imcsdk.apis.admin.user.local_user_delete
-    imcsdk.apis.admin.user.local_user_exists
+  - Setup NTP on a Cisco IMC server.
+options:
+  state:
+    description: Enable/Disable NTP
+    default: "present"
+    choices: ["present", "absent"]
+    required: true
+  ntp_servers:
+    description: Dictionary of NTP servers to be configured {"id":"", "ip":""}
+    required: false
 
 requirements: ['imcsdk']
 author: "Swapnil Wagh(swwagh@cisco.com)"
 '''
 
 EXAMPLES = '''
-- name: create local user
-  cisco_imc_user:
-    name: "ansible-user"
-    pwd: "password"
-    priv: "admin"
-    state: "present"
+- name: enable ntp
+  cisco_imc_ntp
+    ntp_servers:
+      - {"id": "1", "ip": "192.168.1.1"}
+      - {"id": "2", "ip": "192.168.1.2"}
     ip: "192.168.1.1"
     username: "admin"
     password: "password"
@@ -86,39 +69,42 @@ def logout(module, imc_server):
     return False
 
 
-def local_user_setup(server, module):
-    from imcsdk.apis.admin.user import local_user_create, local_user_delete, \
-            local_user_exists
-
-    ansible = module.params
-    name, pwd, priv = ansible["name"], ansible["pwd"], ansible["priv"]
-
-    exists, user = local_user_exists(server, name=name, priv=priv)
-    if ansible["state"] == "present":
-        if exists:
-            return False
-        local_user_create(server, name=name, pwd=pwd, priv=priv)
-    else:
-        if not exists:
-            return False
-        local_user_delete(server, name=name)
-    return True
-
-
 def setup(server, module):
+    from imcsdk.apis.admin.ntp import ntp_enable
+    from imcsdk.apis.admin.ntp import ntp_disable
+    from imcsdk.apis.admin.ntp import ntp_setting_exists
 
     results = {}
     err = False
 
     try:
-        results["changed"] = local_user_setup(server, module)
+        ansible = module.params
+        if ansible['state'] == 'present':
+            ntp_servers = ansible['ntp_servers']
+            match, mo = ntp_setting_exists(
+                                    server,
+                                    ntp_enable='yes',
+                                    ntp_servers=ansible['ntp_servers'])
+            if module.check_mode or match:
+                results["changed"] = not match
+                return results, False
+
+            ntp_enable(server, ntp_servers=ntp_servers)
+
+        elif ansible['state'] == 'absent':
+            match, mo = ntp_setting_exists(server, ntp_enable='no')
+            if module.check_mode or match:
+                results["changed"] = not match
+                return results, False
+
+            ntp_disable(server)
+
+        results['changed'] = True
 
     except Exception as e:
         err = True
         results["msg"] = str(e)
         results["changed"] = False
-        server.logout()
-        raise
 
     return results, err
 
@@ -127,12 +113,9 @@ def main():
     from ansible.module_utils.basic import AnsibleModule
     module = AnsibleModule(
         argument_spec=dict(
-            name=dict(required=True, type='str'),
-            pwd=dict(required=False, default=None, type='str', no_log='True'),
-            priv=dict(required=False, default="read-only",
-                      choices=["admin", "read-only", "user"], type='str'),
-            state=dict(required=False, default="present",
-                       choices=["present", "absent"], type='str'),
+            ntp_servers=dict(required=False, default=[], type='list'),
+            state=dict(required=True,
+                       choices=['present', 'absent'], type='str'),
 
             # ImcHandle
             server=dict(required=False, type='dict'),
