@@ -28,11 +28,6 @@ Input Params:
         default: "present"
         required: False
 
-imcsdk apis:
-    imcsdk.apis.admin.user.local_user_create
-    imcsdk.apis.admin.user.local_user_delete
-    imcsdk.apis.admin.user.local_user_exists
-
 requirements: ['imcsdk']
 author: "Swapnil Wagh(swwagh@cisco.com)"
 '''
@@ -40,7 +35,7 @@ author: "Swapnil Wagh(swwagh@cisco.com)"
 EXAMPLES = '''
 - name: create local user
   cisco_imc_user:
-    name: "ansible-user"
+    name: "jdoe"
     pwd: "password"
     priv: "admin"
     state: "present"
@@ -87,8 +82,9 @@ def logout(module, imc_server):
 
 
 def local_user_setup(server, module):
-    from imcsdk.apis.admin.user import local_user_create, local_user_delete, \
-            local_user_exists
+    from imcsdk.apis.admin.user import local_user_create
+    from imcsdk.apis.admin.user import local_user_delete
+    from imcsdk.apis.admin.user import local_user_exists
 
     ansible = module.params
     name, pwd, priv = ansible["name"], ansible["pwd"], ansible["priv"]
@@ -97,16 +93,17 @@ def local_user_setup(server, module):
     if ansible["state"] == "present":
         if exists:
             return False
-        local_user_create(server, name=name, pwd=pwd, priv=priv)
+        if not module.check_mode:
+            local_user_create(server, name=name, pwd=pwd, priv=priv)
     else:
         if not exists:
             return False
-        local_user_delete(server, name=name)
+        if not module.check_mode:
+            local_user_delete(server, name=name)
     return True
 
 
 def setup(server, module):
-
     results = {}
     err = False
 
@@ -117,8 +114,6 @@ def setup(server, module):
         err = True
         results["msg"] = str(e)
         results["changed"] = False
-        server.logout()
-        raise
 
     return results, err
 
