@@ -1,0 +1,18 @@
+---
+# This role contains task for configuring NTP servers
+
+- name: enable ntp
+  cisco_imc_ntp:
+    ntp_servers: "{{ ntp_servers }}"
+    ip: "{{ imc_ip }}"
+    username: "{{ imc_username }}"
+    password: "{{ imc_password }}"
+    state: "present"
+
+
+- name: disable ntp
+  cisco_imc_ntp:
+    state: "absent"
+    ip: "{{ imc_ip }}"
+    username: "{{ imc_username }}"
+    password: "{{ imc_password }}"
