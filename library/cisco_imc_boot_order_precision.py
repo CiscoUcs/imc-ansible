@@ -138,9 +138,10 @@ def main():
             configured_boot_mode=dict(required=False, default="Legacy",
                                       choices=["Legacy", "None", "Uefi"],
                                       type='str'),
-            reapply=dict(required=False, default="no", choices=["yes", "no"]),
+            reapply=dict(required=False, default="no", choices=["yes", "no"],
+                         type="str"),
             reboot_on_update=dict(required=False, default="no",
-                                  choices=["yes", "no"]),
+                                  choices=["yes", "no"], type="str"),
             server_id=dict(required=False, default=1, type='int'),
 
             # ImcHandle
@@ -149,7 +150,7 @@ def main():
             # Imc server credentials
             ip=dict(required=False, type='str'),
             username=dict(required=False, default="admin", type='str'),
-            password=dict(required=False, type='str'),
+            password=dict(required=False, type='str', no_log=True),
             port=dict(required=False, default=None),
             secure=dict(required=False, default=None),
             proxy=dict(required=False, default=None)

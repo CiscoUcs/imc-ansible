@@ -101,6 +101,29 @@ These are settings that an administrator would need to configure prior to bring 
 
 ### 2.1.3 NTP
 
+1. **`cisco_imc_ntp`**
+
+		Configures NTP on a Cisco IMC server.
+		
+		Input Params:
+			state: 
+				description: Enables/Disables NTP
+				choices: ["present", "absent"]
+				default: "present"
+				required: True
+				
+			ntp_servers:
+				description: Dictionaries of NTP servers to be configured
+								Format:  {"id": <id>, "ip": "<ip-address>"}
+								Upto 4 ntp servers can be specified
+				required: False
+				
+		imcsdk apis:
+		    from imcsdk.apis.admin.ntp import ntp_enable
+		    from imcsdk.apis.admin.ntp import ntp_disable
+		    from imcsdk.apis.admin.ntp import ntp_setting_exists
+		
+
 ### 2.1.4 authentication
 
 ### 2.1.5 SOL
