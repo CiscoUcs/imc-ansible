@@ -5,6 +5,7 @@
   gather_facts: no
   roles:
   - common
+  - admin
   - boot
   - storage
 

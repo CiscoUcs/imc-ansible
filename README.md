@@ -1,24 +1,45 @@
 ```
 ➔ ansible-playbook -i inventory site.yml
 
-PLAY [127.0.0.1] ****************************************************************************
+PLAY [imc] *********************************************************************
 
-TASK [Gathering Facts] **********************************************************************
-ok: [localhost]
+TASK [common : check if imcsdk is installed] ***********************************
+ok: [batman]
 
-TASK [common : check if imcsdk is installed] ************************************************
-ok: [localhost]
+TASK [common : install imcsdk] *************************************************
+skipping: [batman]
 
-TASK [common : install imcsdk] **************************************************************
-skipping: [localhost]
+TASK [admin : set password policy] *********************************************
+ok: [batman]
 
-TASK [boot : set boot order] ****************************************************************
-changed: [localhost]
+TASK [admin : create local user] ***********************************************
+changed: [batman]
 
-TASK [boot : set boot order alternate] ******************************************************
-changed: [localhost]
+TASK [admin : delete local user] ***********************************************
+changed: [batman]
 
-PLAY RECAP **********************************************************************************
-localhost                  : ok=4    changed=2    unreachable=0    failed=0
+TASK [admin : reset password policy] *******************************************
+changed: [batman]
+
+TASK [admin : enable ntp] ******************************************************
+changed: [batman]
+
+TASK [admin : disable ntp] *****************************************************
+changed: [batman]
+
+TASK [boot : set boot order] ***************************************************
+changed: [batman]
+
+TASK [boot : set boot order alternate] *****************************************
+changed: [batman]
+
+TASK [storage : create virtual drive] ******************************************
+changed: [batman]
+
+TASK [storage : delete virtual drive] ******************************************
+changed: [batman]
+
+PLAY RECAP *********************************************************************
+batman                    : ok=11   changed=9    unreachable=0    failed=0
 
 ```
