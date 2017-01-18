@@ -30,6 +30,7 @@ EXAMPLES = '''
     ip: "192.168.1.1"
     username: "admin"
     password: "password"
+    state: "present"
 '''
 
 
@@ -81,20 +82,19 @@ def setup(server, module):
         ansible = module.params
         if ansible['state'] == 'present':
             ntp_servers = ansible['ntp_servers']
-            match, mo = ntp_setting_exists(
+            exists, mo = ntp_setting_exists(
                                     server,
                                     ntp_enable='yes',
                                     ntp_servers=ansible['ntp_servers'])
-            if module.check_mode or match:
-                results["changed"] = not match
+            if module.check_mode or exists:
+                results["changed"] = not exists
                 return results, False
 
             ntp_enable(server, ntp_servers=ntp_servers)
-
         elif ansible['state'] == 'absent':
-            match, mo = ntp_setting_exists(server, ntp_enable='no')
-            if module.check_mode or match:
-                results["changed"] = not match
+            exists, mo = ntp_setting_exists(server, ntp_enable='no')
+            if module.check_mode or exists:
+                results["changed"] = not exists
                 return results, False
 
             ntp_disable(server)
