@@ -1,0 +1,17 @@
+---
+# This role contains task for configuring LDAP
+
+- name: enable LDAP
+  cisco_imc_ldap:
+    timeout: 60
+    ip: "{{ imc_ip }}"
+    username: "{{ imc_username }}"
+    password: "{{ imc_password }}"
+    state: "present"
+
+- name: disable LDAP
+  cisco_imc_ldap:
+    state: "absent"
+    ip: "{{ imc_ip }}"
+    username: "{{ imc_username }}"
+    password: "{{ imc_password }}"

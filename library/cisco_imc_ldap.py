@@ -65,26 +65,11 @@ def setup(server, module):
     try:
         ansible = module.params
 
-        args = {
-            'basedn': ansible.get('basedn'),
-            'domain': ansible.get('domain'),
-            'encryption': ansible.get('encryption'),
-            'timeout': ansible.get('timeout'),
-            'user_search_precedence': ansible.get('user_search_precedence'),
-            'bind_method': ansible.get('bind_method'),
-            'bind_dn': ansible.get('bind_dn'),
-            'password': ansible.get('ldap_password'),
-            'filter': ansible.get('filter'),
-            'attribute': ansible.get('attribute'),
-            'group_attribute': ansible.get('group_attribute'),
-            'group_nested_search': ansible.get('group_nested_search'),
-            'group_auth': ansible.get('group_auth'),
-            'ldap_servers': ansible.get('ldap_servers'),
-            'locate_directory_using_dns': ansible.get('locate_directory_using_dns'),
-            'dns_domain_source': ansible.get('dns_domain_source'),
-            'dns_search_domain': ansible.get('dns_search_domain'),
-            'dns_search_forest': ansible.get('dns_search_forest')
-        }
+        args = {}
+        for key in ansible:
+            if key == 'state' or ansible.get(key) is None:
+                continue
+            args[key] = ansible.get(key)
 
         if ansible['state'] == 'present':
             exists, mo = ldap_settings_exist(handle=server,
@@ -121,7 +106,7 @@ def main():
             domain=dict(required=False),
             encryption=dict(required=False, default=True, type='bool'),
             timeout=dict(required=False, default=60, type='int'),
-            user_search_precedence=dict(required=False, default='local-user-db', type='str'),
+            user_search_precedence=dict(required=False),
             bind_method=dict(required=False, default='login-credentials', type='str'),
             bind_dn=dict(required=False),
             ldap_password=dict(required=False),
