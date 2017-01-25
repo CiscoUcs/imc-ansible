@@ -233,6 +233,7 @@ def virtual_drive(server, module):
 
 def main():
     from ansible.module_utils.basic import AnsibleModule
+    from ansible.module_utils.cisco_imc import ImcConnection
     module = AnsibleModule(
         argument_spec=dict(
             drive_group=dict(required=True, type='list'),
@@ -293,9 +294,10 @@ def main():
         supports_check_mode=True
     )
 
-    server = login(module)
+    conn = ImcConnection(module)
+    server = conn.login()
     results, err = virtual_drive(server, module)
-    logout(module, server)
+    conn.logout()
     if err:
         module.fail_json(**results)
     module.exit_json(**results)

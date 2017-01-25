@@ -163,6 +163,7 @@ def setup(server, module):
 
 def main():
     from ansible.module_utils.basic import AnsibleModule
+    from ansible.module_utils.cisco_imc import ImcConnection
     module = AnsibleModule(
         argument_spec=dict(
             strong_password=dict(required=False, default="disabled",
@@ -190,9 +191,10 @@ def main():
         supports_check_mode=True
     )
 
-    server = login(module)
+    conn = ImcConnection(module)
+    server = conn.login()
     results, err = setup(server, module)
-    logout(module, server)
+    conn.logout()
     if err:
         module.fail_json(**results)
     module.exit_json(**results)

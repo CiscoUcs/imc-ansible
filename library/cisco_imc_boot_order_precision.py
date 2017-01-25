@@ -48,49 +48,13 @@ EXAMPLES = '''
 '''
 
 
-def login(module):
-    ansible = module.params
-    server = ansible.get('server')
-    if server:
-        return server
-
-    from imcsdk.imchandle import ImcHandle
-    results = {}
-    try:
-        server = ImcHandle(ip=ansible["ip"],
-                           username=ansible["username"],
-                           password=ansible["password"],
-                           port=ansible["port"],
-                           secure=ansible["secure"],
-                           proxy=ansible["proxy"])
-        server.login()
-    except Exception as e:
-        results["msg"] = str(e)
-        module.fail_json(**results)
-    return server
-
-
-def logout(module, imc_server):
-    ansible = module.params
-    server = ansible.get('server')
-    if server:
-        # we used a pre-existing handle from another task.
-        # do not logout
-        return False
-
-    if imc_server:
-        imc_server.logout()
-        return True
-    return False
-
-
 def policy_exists(server, module):
     from imcsdk.apis.server.bios import boot_order_precision_exists as exists
 
     ansible = module.params
     match, err = exists(handle=server,
                         reboot_on_update=ansible["reboot_on_update"],
-                        # reapply=ansible["reapply"],
+                        reapply=ansible["reapply"],
                         configured_boot_mode=ansible["configured_boot_mode"],
                         boot_devices=ansible["boot_devices"],
                         server_id=ansible["server_id"])
@@ -132,6 +96,7 @@ def boot_order_precision(server, module):
 
 def main():
     from ansible.module_utils.basic import AnsibleModule
+    from ansible.module_utils.cisco_imc import ImcConnection
     module = AnsibleModule(
         argument_spec=dict(
             boot_devices=dict(required=True, type='list'),
@@ -158,9 +123,10 @@ def main():
         supports_check_mode=True
     )
 
-    server = login(module)
+    conn = ImcConnection(module)
+    server = conn.login()
     results, err = boot_order_precision(server, module)
-    logout(module, server)
+    conn.logout()
     if err:
         module.fail_json(**results)
     module.exit_json(**results)
