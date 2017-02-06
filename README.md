@@ -1,6 +1,10 @@
 # imc-ansible
 
 # install
+- ansible must be installed
+```
+sudo pip install ansible
+```
 - you will need the latest imcsdk.
 ```
 git clone https://github.com/ciscoucs/imcsdk
@@ -19,6 +23,18 @@ sudo python install.py
 cd imc-ansible
 sudo python uninstall.py
 ```
+
+# usage
+`site.yml` and the various playbooks in the `roles` folder can be used as an
+example on how to use the various modules that are a part of this package.
+
+Users can create a new playbook `flow.yml` and pick taks from the example
+roles and use them. Users can also modify the existing tasks and execute the
+plays as shown in the next section of the readme.
+
+`inventory` file should be updated to mention the connection details of the
+server.
+
 
 # sample run
 ```
