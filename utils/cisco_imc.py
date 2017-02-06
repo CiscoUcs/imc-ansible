@@ -8,6 +8,11 @@ except:
 
 class ImcConnection():
 
+    @staticmethod
+    def is_login_param(param):
+        return param in ["ip", "username", "password",
+                         "port", "secure", "proxy", "server"]
+
     def __init__(self, module):
         if HAS_IMCSDK is False:
             results = {}

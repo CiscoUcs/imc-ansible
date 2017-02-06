@@ -19,40 +19,16 @@ TODO
 '''
 
 
-def login(module):
-    ansible = module.params
-    server = ansible.get('server')
-    if server:
-        return server
-
-    from imcsdk.imchandle import ImcHandle
-    results = {}
-    try:
-        server = ImcHandle(ip=ansible["ip"],
-                           username=ansible["username"],
-                           password=ansible["password"],
-                           port=ansible["port"],
-                           secure=ansible["secure"],
-                           proxy=ansible["proxy"])
-        server.login()
-    except Exception as e:
-        results["msg"] = str(e)
-        module.fail_json(**results)
-    return server
-
-
-def logout(module, imc_server):
-    ansible = module.params
-    server = ansible.get('server')
-    if server:
-        # we used a pre-existing handle from another task.
-        # do not logout
-        return False
-
-    if imc_server:
-        imc_server.logout()
-        return True
-    return False
+def _get_object_params(params):
+    from ansible.module_utils.cisco_imc import ImcConnection
+    args = {}
+    for key in params:
+        if (key == 'state' or
+                ImcConnection.is_login_param(key) or
+                params.get(key) is None):
+            continue
+        args[key] = params.get(key)
+    return args
 
 
 def setup(server, module):
@@ -65,12 +41,7 @@ def setup(server, module):
     try:
         ansible = module.params
 
-        args = {}
-        for key in ansible:
-            if key == 'state' or ansible.get(key) is None:
-                continue
-            args[key] = ansible.get(key)
-
+        args = _get_object_params(ansible)
         if ansible['state'] == 'present':
             exists, mo = ldap_settings_exist(handle=server,
                                              enabled=True,
