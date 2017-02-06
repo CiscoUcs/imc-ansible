@@ -2,23 +2,23 @@
 
 # install
 - you will need the latest imcsdk.
-    ```
-        git clone https://github.com/ciscoucs/imcsdk
-        cd imcsdk
-        sudo make install
-    ```
+```
+git clone https://github.com/ciscoucs/imcsdk
+cd imcsdk
+sudo make install
+```
 - clone this repository and install the ansible modules
-    ```
-        git clone https://github.com/ciscoucs/imc-ansible
-        cd imc-ansible
-        sudo python install.py
-    ```
+```
+git clone https://github.com/ciscoucs/imc-ansible
+cd imc-ansible
+sudo python install.py
+```
 
 # uninstall
-    ```
-        cd imc-ansible
-        sudo python uninstall.py
-    ```
+```
+cd imc-ansible
+sudo python uninstall.py
+```
 
 # sample run
 ```
