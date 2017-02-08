@@ -8,12 +8,22 @@ version_added: "0.9.0.0"
 description:
   - Create and Delete virtual drives on a Cisco IMC server
 options:
+  boot_drive:
+    description: Set as boot drive
+                example - True
+    required: false
+
   drive_group:
     description: A list of drive groups. It needs to be a list of list.
                 example - [[1]]
                         - [[1, 2]]
                         - [[1, 2],[3, 4]]
     required: true
+
+  controller_type:
+    description: Name of the controller
+                example - 'SAS'
+    required: false
 
   controller_slot:
     description: Name of the SAS controller slot
@@ -162,6 +172,7 @@ def exists(server, module):
         vd_name = vd_name_derive(ansible["raid_level"],
                                  ansible["drive_group"])
     exists, err = vd_exists(handle=server,
+                            controller_type=ansible['controller_type'],
                             controller_slot=ansible["controller_slot"],
                             virtual_drive_name=vd_name,
                             server_id=ansible['server_id'])
@@ -172,6 +183,7 @@ def exists(server, module):
 
 def virtual_drive(server, module):
     from imcsdk.apis.server.storage import virtual_drive_create as vd_create
+    from imcsdk.apis.server.storage import vd_query_by_name
     from imcsdk.apis.server.storage import virtual_drive_delete as vd_delete
     from imcsdk.apis.server.storage import vd_name_derive
 
@@ -186,8 +198,10 @@ def virtual_drive(server, module):
                 results["changed"] = not _exists
                 return results, False
 
+            print "size is %s" % ansible["size"]
             vd_create(handle=server,
                       drive_group=ansible["drive_group"],
+                      controller_type=ansible['controller_type'],
                       controller_slot=ansible["controller_slot"],
                       raid_level=ansible["raid_level"],
                       virtual_drive_name=ansible["virtual_drive_name"],
@@ -198,8 +212,20 @@ def virtual_drive(server, module):
                       write_policy=ansible["write_policy"],
                       strip_size=ansible["strip_size"],
                       size=ansible["size"],
-                      admin_action=ansible["admin_action"],
                       server_id=ansible['server_id'])
+            if ansible['boot_drive']:
+                # VD name may have been derived while creation
+                vd_name = ansible["virtual_drive_name"]
+                if vd_name is None:
+                    vd_name = vd_name_derive(ansible["raid_level"],
+                                             ansible["drive_group"])
+	        vd = vd_query_by_name(handle=server,
+                                      controller_type=ansible['controller_type'],
+ 			              controller_slot=ansible['controller_slot'],
+ 			              name=vd_name,
+ 			              server_id=ansible['server_id'])
+                vd.admin_action = 'set-boot-drive'
+                server.set_mo(vd)
         else:
             if module.check_mode:
                 results["changed"] = _exists
@@ -216,6 +242,7 @@ def virtual_drive(server, module):
                                          ansible["drive_group"])
 
             vd_delete(handle=server,
+                      controller_type=ansible['controller_type'],
                       controller_slot=ansible["controller_slot"],
                       name=vd_name,
                       server_id=ansible['server_id'])
@@ -236,7 +263,9 @@ def main():
     from ansible.module_utils.cisco_imc import ImcConnection
     module = AnsibleModule(
         argument_spec=dict(
+            boot_drive=dict(required=False, default=False, type='bool'),
             drive_group=dict(required=True, type='list'),
+            controller_type=dict(required=False, default='SAS', type='str'),
             controller_slot=dict(required=True, type='str'),
             raid_level=dict(required=False,
                             default=0,
