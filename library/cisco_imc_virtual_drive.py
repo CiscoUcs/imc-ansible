@@ -200,7 +200,6 @@ def virtual_drive(server, module):
                 results["changed"] = not _exists
                 return results, False
 
-            print "size is %s" % ansible["size"]
             vd_create(handle=server,
                       drive_group=ansible["drive_group"],
                       controller_type=ansible['controller_type'],
