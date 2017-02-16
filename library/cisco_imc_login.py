@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from ansible.module_utils.basic import AnsibleModule
+
 DOCUMENTATION = '''
 ---
 module: cisco_imc_login
@@ -65,7 +67,6 @@ def _login(ip, username, password, port=None, secure=None, proxy=None):
 
 
 def main():
-    from ansible.module_utils.basic import AnsibleModule
     module = AnsibleModule(
         argument_spec=dict(
             ip=dict(required=True, type='str'),

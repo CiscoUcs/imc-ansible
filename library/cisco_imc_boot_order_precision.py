@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from ansible.module_utils.basic import AnsibleModule
+
 DOCUMENTATION = '''
 ---
 module: cisco_imc_boot_order_precision
@@ -95,7 +97,6 @@ def boot_order_precision(server, module):
 
 
 def main():
-    from ansible.module_utils.basic import AnsibleModule
     from ansible.module_utils.cisco_imc import ImcConnection
     module = AnsibleModule(
         argument_spec=dict(
