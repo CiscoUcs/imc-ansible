@@ -1,4 +1,7 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+
+from ansible.module_utils.basic import AnsibleModule
+
 
 DOCUMENTATION = '''
 ---
@@ -162,7 +165,6 @@ def setup(server, module):
 
 
 def main():
-    from ansible.module_utils.basic import AnsibleModule
     from ansible.module_utils.cisco_imc import ImcConnection
     module = AnsibleModule(
         argument_spec=dict(

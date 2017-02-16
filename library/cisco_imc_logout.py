@@ -1,4 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+
+from ansible.module_utils.basic import AnsibleModule
 
 DOCUMENTATION = '''
 ---
@@ -38,7 +40,6 @@ def imc_logout(module):
 
 
 def main():
-    from ansible.module_utils.basic import AnsibleModule
     module = AnsibleModule(
         argument_spec=dict(
             server=dict(required=True)
