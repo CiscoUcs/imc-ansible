@@ -137,7 +137,7 @@ def main():
             server_id=dict(required=False, type='int', default=1),
             com_port=dict(type='str', default="com0",
                       choices=["com0", "com1"]),
-            ssh_port=dict(type='int', default=22),
+            ssh_port=dict(type='int', default=2400),
             state=dict(required=False, default="present",
                        choices=["present", "absent"], type='str'),
 
