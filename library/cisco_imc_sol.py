@@ -4,42 +4,49 @@ from ansible.module_utils.basic import *
 
 DOCUMENTATION = '''
 ---
-module: cisco_imc_user
-short_description: Configures a local user on a Cisco IMC Server
+module: cisco_imc_sol
+short_description: Configures sol on a Cisco IMC Server
 version_added: "0.9.0.0"
 description:
-    - Configures a local user on a Cisco IMC Server
+    - Configures the Serial Over Lan(SOL) service on a Cisco IMC Server
 Input Params:
-    name:
-        description: Username for the local user
-        required: True
+    speed:
+        description: speed of the connection
+        required: False
+        choices: ["9600", "19200", "38400", "57600", "115200"]
+        default: '19200'
 
-    pwd:
-        description: Password for the local user
-        required: True
+    comport:
+        description: Comport on the server side
+        required: False
+        choices: ["com0", "com1"]
 
-    priv:
-        description: Privilege level of the local user
+    server_id:
+        description: Server Id to be specified for C3260 platforms
         choices: ["admin", "read-only", "user"]
         default: "read-only"
         required: False
 
+    ssh_port: 
+        description: the SSH port for access to the console
+        default: 22
+
     state:
-        description: Used to create or delete the local user
+        description: Used to create or delete the SOL console
         choices: ["present", "absent"]
         default: "present"
         required: False
 
 requirements: ['imcsdk']
-author: "Swapnil Wagh(swwagh@cisco.com)"
+author: "Branson Matheson (brmathes@cisco.com)"
 '''
 
 EXAMPLES = '''
-- name: create local user
-  cisco_imc_user:
-    name: "jdoe"
-    pwd: "password"
-    priv: "admin"
+- name: enable SOL over ssh
+  cisco_imc_sol:
+    comport: "com0"
+    speed: "9600"
+    ssh_port: 22
     state: "present"
     ip: "192.168.1.1"
     username: "admin"
@@ -83,25 +90,26 @@ def logout(module, imc_server):
     return False
 
 
-def local_user_setup(server, module):
-    from imcsdk.apis.admin.user import local_user_create
-    from imcsdk.apis.admin.user import local_user_delete
-    from imcsdk.apis.admin.user import local_user_exists
+def setup_sol(server, module):
+    from imcsdk.apis.server.remotepresence import sol_setup
+    from imcsdk.apis.server.remotepresence import sol_disable
+    from imcsdk.apis.server.remotepresence import is_sol_enabled
 
     ansible = module.params
-    name, pwd, priv = ansible["name"], ansible["pwd"], ansible["priv"]
+    speed, comport = ansible["speed"], ansible["com_port"]
+    ssh_port, server_id = ansible['ssh_port'], ansible["server_id"]
 
-    exists, user = local_user_exists(server, name=name, priv=priv)
+    exists = is_sol_enabled(server, server_id=server_id)
     if ansible["state"] == "present":
         if exists:
             return False
         if not module.check_mode:
-            local_user_create(server, name=name, pwd=pwd, priv=priv)
+            sol_setup(server, speed, comport, ssh_port, server_id=server_id)
     else:
         if not exists:
             return False
         if not module.check_mode:
-            local_user_delete(server, name=name)
+            sol_disable(server, server_id=server_id)
     return True
 
 
@@ -110,11 +118,11 @@ def setup(server, module):
     err = False
 
     try:
-        results["changed"] = local_user_setup(server, module)
+        results["changed"] = setup_sol(server, module)
 
     except Exception as e:
         err = True
-        results["msg"] = str(e)
+        results["msg"] = "setup error: %s " % str(e)
         results["changed"] = False
 
     return results, err
@@ -124,10 +132,12 @@ def main():
     from ansible.module_utils.cisco_imc import ImcConnection
     module = AnsibleModule(
         argument_spec=dict(
-            name=dict(required=True, type='str'),
-            pwd=dict(required=False, default=None, type='str', no_log='True'),
-            priv=dict(required=False, default="read-only",
-                      choices=["admin", "read-only", "user"], type='str'),
+            speed=dict(type='str', default='115200',
+                       choices=["9600", "19200", "38400", "57600", "115200"]),
+            server_id=dict(required=False, type='int', default=1),
+            com_port=dict(type='str', default="com0",
+                      choices=["com0", "com1"]),
+            ssh_port=dict(type='int', default=22),
             state=dict(required=False, default="present",
                        choices=["present", "absent"], type='str'),
 

@@ -4,35 +4,46 @@ from ansible.module_utils.basic import *
 
 DOCUMENTATION = '''
 ---
-module: cisco_imc_ntp
-short_description: Setup NTP on a Cisco IMC server.
+module: cisco_imc_ipmi
+short_description: Configures ipmi a Cisco IMC Server
 version_added: "0.9.0.0"
 description:
-  - Setup NTP on a Cisco IMC server.
-options:
-  state:
-    description: Enable/Disable NTP
-    default: "present"
-    choices: ["present", "absent"]
-    required: true
-  ntp_servers:
-    description: Dictionary of NTP servers to be configured {"id":"", "ip":""}
-    required: false
+    - Configures the Serial Over Lan(SOL) service on a Cisco IMC Server
+Input Params:
+    priv:
+        description: Privilege to be used
+        required: False
+        choices: ["admin", "user", "read-only"]
+        default: 'user'
+
+    key:
+        description: Hexadecimal Key to be used for authentication
+        required: False
+
+    server_id:
+        description: Server Id to be specified for C3260 platforms
+        choices: ["admin", "read-only", "user"]
+        default: "read-only"
+        required: False
+
+    state:
+        description: Used to create or delete the SOL console
+        choices: ["present", "absent"]
+        default: "present"
+        required: False
 
 requirements: ['imcsdk']
-author: "Swapnil Wagh(swwagh@cisco.com)"
+author: "Branson Matheson (brmathes@cisco.com)"
 '''
 
 EXAMPLES = '''
-- name: enable ntp
-  cisco_imc_ntp
-    ntp_servers:
-      - {"id": "1", "ip": "192.168.1.1"}
-      - {"id": "2", "ip": "192.168.1.2"}
+- name: enable IPMI
+  cisco_imc_ipmi:
+    priv: "admin"
+    state: "present"
     ip: "192.168.1.1"
     username: "admin"
     password: "password"
-    state: "present"
 '''
 
 
@@ -72,40 +83,40 @@ def logout(module, imc_server):
     return False
 
 
-def setup(server, module):
-    from imcsdk.apis.admin.ntp import ntp_enable
-    from imcsdk.apis.admin.ntp import ntp_disable
-    from imcsdk.apis.admin.ntp import ntp_setting_exists
+def setup_ipmi(server, module):
+    from imcsdk.apis.admin.ipmi import ipmi_disable
+    from imcsdk.apis.admin.ipmi import ipmi_enable
+    from imcsdk.apis.admin.ipmi import is_ipmi_enabled
 
+    ansible = module.params
+    priv, key, server_id = (ansible["priv"],
+                            ansible["key"], ansible["server_id"])
+
+    exists = is_ipmi_enabled(server, server_id=server_id)
+    
+    if ansible["state"] == "present":
+        if exists:
+            return False
+        if not module.check_mode:
+            ipmi_enable(server, priv=priv, key=key, server_id=server_id)
+    else:
+        if not exists:
+            return False
+        if not module.check_mode:
+            ipmi_disable(server, server_id=server_id)
+    return True
+
+
+def setup(server, module):
     results = {}
     err = False
 
     try:
-        ansible = module.params
-        if ansible['state'] == 'present':
-            ntp_servers = ansible['ntp_servers']
-            exists, mo = ntp_setting_exists(
-                                    server,
-                                    ntp_enable='yes',
-                                    ntp_servers=ansible['ntp_servers'])
-            if module.check_mode or exists:
-                results["changed"] = not exists
-                return results, False
-
-            ntp_enable(server, ntp_servers=ntp_servers)
-        elif ansible['state'] == 'absent':
-            exists, mo = ntp_setting_exists(server, ntp_enable='no')
-            if module.check_mode or exists:
-                results["changed"] = not exists
-                return results, False
-
-            ntp_disable(server)
-
-        results['changed'] = True
+        results["changed"] = setup_ipmi(server, module)
 
     except Exception as e:
         err = True
-        results["msg"] = str(e)
+        results["msg"] = "setup error: %s " % str(e)
         results["changed"] = False
 
     return results, err
@@ -115,9 +126,12 @@ def main():
     from ansible.module_utils.cisco_imc import ImcConnection
     module = AnsibleModule(
         argument_spec=dict(
-            ntp_servers=dict(required=False, default=[], type='list'),
-            state=dict(required=True,
-                       choices=['present', 'absent'], type='str'),
+            key=dict(required=False, type='str', default='0'*40),
+            server_id=dict(required=False, type='int', default=1),
+            priv=dict(required=False, default="read-only",
+                      choices=["admin", "read-only", "user"], type='str'),
+            state=dict(required=False, default="present",
+                       choices=["present", "absent"], type='str'),
 
             # ImcHandle
             server=dict(required=False, type='dict'),
