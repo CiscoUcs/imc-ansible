@@ -36,6 +36,10 @@ Input Params:
         choices: ["present", "absent"]
         default: "present"
         required: False
+        
+notes: 
+    - check_mode supported
+    - returns SOL status as 'status'
 
 requirements: ['imcsdk']
 author: "Branson Matheson (brmathes@cisco.com)"
@@ -54,42 +58,6 @@ EXAMPLES = '''
 '''
 
 
-def login(module):
-    ansible = module.params
-    server = ansible.get('server')
-    if server:
-        return server
-
-    from imcsdk.imchandle import ImcHandle
-    results = {}
-    try:
-        server = ImcHandle(ip=ansible["ip"],
-                           username=ansible["username"],
-                           password=ansible["password"],
-                           port=ansible["port"],
-                           secure=ansible["secure"],
-                           proxy=ansible["proxy"])
-        server.login()
-    except Exception as e:
-        results["msg"] = str(e)
-        module.fail_json(**results)
-    return server
-
-
-def logout(module, imc_server):
-    ansible = module.params
-    server = ansible.get('server')
-    if server:
-        # we used a pre-existing handle from another task.
-        # do not logout
-        return False
-
-    if imc_server:
-        imc_server.logout()
-        return True
-    return False
-
-
 def setup_sol(server, module):
     from imcsdk.apis.server.remotepresence import sol_setup
     from imcsdk.apis.server.remotepresence import sol_disable
@@ -99,18 +67,18 @@ def setup_sol(server, module):
     speed, comport = ansible["speed"], ansible["com_port"]
     ssh_port, server_id = ansible['ssh_port'], ansible["server_id"]
 
-    exists = is_sol_enabled(server, server_id=server_id)
+    status = is_sol_enabled(server, server_id=server_id)
+    changed = False
     if ansible["state"] == "present":
-        if exists:
-            return False
-        if not module.check_mode:
-            sol_setup(server, speed, comport, ssh_port, server_id=server_id)
+        if module.check_mode == True and status == False:
+            changed = sol_setup(
+                server, speed, comport, ssh_port, server_id=server_id)
     else:
-        if not exists:
-            return False
-        if not module.check_mode:
-            sol_disable(server, server_id=server_id)
-    return True
+        if module.check_mode == True and status == True:
+            changed = sol_disable(
+                server, server_id=server_id)
+            
+    return changed, status
 
 
 def setup(server, module):
@@ -118,7 +86,7 @@ def setup(server, module):
     err = False
 
     try:
-        results["changed"] = setup_sol(server, module)
+        results["changed"], results["status"] = setup_sol(server, module)
 
     except Exception as e:
         err = True
@@ -154,6 +122,9 @@ def main():
         ),
         supports_check_mode=True
     )
+
+    if module.param['ssh_port'] < 1025 or module.param['ssh_port'] > 65535: 
+        module.fail_json(msg="ssh_port must be in range 1024-65535")
 
     conn = ImcConnection(module)
     server = conn.login()
