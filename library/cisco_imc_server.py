@@ -23,6 +23,11 @@ Input Params:
     timeout:
         description: number of seconds to wait for state change
         required: False
+        default: 60
+
+    interval:
+        description: number of seconds to wait for between state change valudation tests
+        default: 5
 
     server_id:
         description: Server Id to be specified for C3260 platforms
@@ -33,6 +38,9 @@ Input Params:
             if specified on LED it will light the chassis id.
         required: False
 
+notes:
+    - check_mode supported for power but not LED status
+    - returns power_state
 requirements: ['imcsdk']
 author: "Branson Matheson (brmathes@cisco.com)"
 '''
@@ -49,48 +57,12 @@ EXAMPLES = '''
   cisco_imc_server:
     state: shutdown
     indicator_led: on
-    poweroff_seconds: 300
+    timeout: 300
     ip: "192.168.1.1"
     username: "admin"
     password: "password"
 
 '''
-
-
-def login(module):
-    ansible = module.params
-    server = ansible.get('server')
-    if server:
-        return server
-
-    from imcsdk.imchandle import ImcHandle
-    results = {}
-    try:
-        server = ImcHandle(ip=ansible["ip"],
-                           username=ansible["username"],
-                           password=ansible["password"],
-                           port=ansible["port"],
-                           secure=ansible["secure"],
-                           proxy=ansible["proxy"])
-        server.login()
-    except Exception as e:
-        results["msg"] = str(e)
-        module.fail_json(**results)
-    return server
-
-
-def logout(module, imc_server):
-    ansible = module.params
-    server = ansible.get('server')
-    if server:
-        # we used a pre-existing handle from another task.
-        # do not logout
-        return False
-
-    if imc_server:
-        imc_server.logout()
-        return True
-    return False
 
 
 def setup_server_power(server, module, status, timeout, interval):
@@ -105,14 +77,14 @@ def setup_server_power(server, module, status, timeout, interval):
     server_id = ansible["server_id"]
     changed = False
 
-    current = server_power_state_get(server, server_id=server_id)
+    state = server_power_state_get(server, server_id=server_id)
 
-    if current == "off":
+    if check_mode == True and state == "off":
         if status == "on" or status == "boot":
             changed = server_power_up(server, timeout=timeout, 
                             interval=interval, serverid_=server_id)
         
-    elif current == "on":
+    elif check_mode == True and state == "on":
         if status == "shutdown":
             changed = server_power_down_gracefully(server, timeout=timeout, 
                             interval=interval, serverid_=server_id)
@@ -123,7 +95,7 @@ def setup_server_power(server, module, status, timeout, interval):
              changed = server_power_cycle(server, timeout=timeout, 
                             interval=interval, serverid_=server_id)
             
-    return change
+    return change, state
 
 
 def setup_server_led(server, module, locator_led):
@@ -132,6 +104,7 @@ def setup_server_led(server, module, locator_led):
 
     server_id, chassis_id = ansible["server_id"], ansible["chassis_id"]
     
+    # no method for determining current LED status.
     if locator_led == "on": 
         locator_led_on(server,
                        server_id=server_id,
@@ -141,7 +114,6 @@ def setup_server_led(server, module, locator_led):
                         server_id=server_id, 
                         chassis_id=chassis_id)
     return True
-
     
 
 def setup_server(server, module):
@@ -149,13 +121,13 @@ def setup_server(server, module):
     status, locator_led = ansible["status"], ansible["locator_led"]
     
     if status is not None:
-        power_changed = setup_server_power(server, module, 
-                               status, timeout, interval)
+        power_changed, power_state = setup_server_power(
+            server, module, status, timeout, interval)
         
     if locator_led is not None:
         led_changed = setup_server_led(server, module, locator_led)
             
-    return (power_changed or led_changed)
+    return (power_changed or led_changed), power_state
 
 
 def setup(server, module):
@@ -163,7 +135,9 @@ def setup(server, module):
     err = False
 
     try:
-        results["changed"] = setup_server(server, module)
+        results["changed"], results['power_state'] = setup_server(
+            server, module)
+
 
     except Exception as e:
         err = True
@@ -181,8 +155,10 @@ def main():
             chassis_id=dict(required=False, type='int', default=1),
             state=dict(required=False, type='str',
                        choices=["on", "shutdown", "off", "reset", "boot"]),
-            state=dict(required=False, type='str',
+            locator_led=dict(required=False, type='str',
                        choices=["on", "off"]),
+            timeout=dict(type='int', default=60),
+            interval=dict(type='int', default=5),
 
             # ImcHandle
             server=dict(required=False, type='dict'),
