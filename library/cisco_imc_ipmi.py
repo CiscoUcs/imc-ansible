@@ -46,43 +46,6 @@ EXAMPLES = '''
     password: "password"
 '''
 
-
-def login(module):
-    ansible = module.params
-    server = ansible.get('server')
-    if server:
-        return server
-
-    from imcsdk.imchandle import ImcHandle
-    results = {}
-    try:
-        server = ImcHandle(ip=ansible["ip"],
-                           username=ansible["username"],
-                           password=ansible["password"],
-                           port=ansible["port"],
-                           secure=ansible["secure"],
-                           proxy=ansible["proxy"])
-        server.login()
-    except Exception as e:
-        results["msg"] = str(e)
-        module.fail_json(**results)
-    return server
-
-
-def logout(module, imc_server):
-    ansible = module.params
-    server = ansible.get('server')
-    if server:
-        # we used a pre-existing handle from another task.
-        # do not logout
-        return False
-
-    if imc_server:
-        imc_server.logout()
-        return True
-    return False
-
-
 def setup_ipmi(server, module):
     from imcsdk.apis.admin.ipmi import ipmi_disable
     from imcsdk.apis.admin.ipmi import ipmi_enable
