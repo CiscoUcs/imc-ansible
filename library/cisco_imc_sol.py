@@ -14,7 +14,7 @@ Input Params:
         description: speed of the connection
         required: False
         choices: ["9600", "19200", "38400", "57600", "115200"]
-        default: '19200'
+        default: 115200
 
     comport:
         description: Comport on the server side
@@ -49,9 +49,9 @@ EXAMPLES = '''
 - name: enable SOL over ssh
   cisco_imc_sol:
     comport: "com0"
-    speed: "9600"
+    speed: "115200"
     ssh_port: 22
-    state: "present"
+    state: present
     ip: "192.168.1.1"
     username: "admin"
     password: "password"
