@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.basic import *
 
 DOCUMENTATION = '''
 ---
@@ -63,6 +63,7 @@ def _login(ip, username, password, port=None, secure=None, proxy=None):
 
     results["msg"] = "login succeded"
     results["changed"] = False
+    results["server"] = server
     return server, results, False
 
 
