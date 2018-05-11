@@ -11,7 +11,7 @@ description:
     - Configures the Serial Over Lan(SOL) service on a Cisco IMC Server
 Input Params:
     state:
-        description: speed of the connection
+        description: desired power state
         required: False
         choices: ["on", "shutdown", "off", "reset", "boot"]
 
@@ -39,7 +39,6 @@ Input Params:
         required: False
 
 notes:
-    - check_mode supported for power but not LED status
     - returns power_state
 requirements: ['imcsdk']
 author: "Branson Matheson (brmathes@cisco.com)"
@@ -65,44 +64,43 @@ EXAMPLES = '''
 '''
 
 
-def setup_server_power(server, module, status, timeout, interval):
+def setup_server_power(server, params, status):
     from imcsdk.apis.server.serveractions import server_power_state_get
     from imcsdk.apis.server.serveractions import server_power_up
     from imcsdk.apis.server.serveractions import server_power_down
     from imcsdk.apis.server.serveractions import server_power_down_gracefully
     from imcsdk.apis.server.serveractions import server_power_cycle
 
-    ansible = module.params
-    timeout, interval = ansible["timeout"], ansible["interval"]
-    server_id = ansible["server_id"]
-    changed = False
+    timeout, interval = params["timeout"], params["interval"]
+    server_id = params["server_id"]
+    server_mo = None
 
     state = server_power_state_get(server, server_id=server_id)
 
-    if check_mode == True and state == "off":
+    if state == "off":
         if status == "on" or status == "boot":
-            changed = server_power_up(server, timeout=timeout, 
+            server_mo = server_power_up(server, timeout=timeout,
                             interval=interval, serverid_=server_id)
         
-    elif check_mode == True and state == "on":
+    elif state == "on":
         if status == "shutdown":
-            changed = server_power_down_gracefully(server, timeout=timeout, 
+            server_mo = server_power_down_gracefully(server, timeout=timeout,
                             interval=interval, serverid_=server_id)
         elif status == "off":
-            changed = server_power_down(server, timeout=timeout, 
+            server_mo = server_power_down(server, timeout=timeout,
                             interval=interval, serverid_=server_id)
         elif status == "boot" or status == "reset":
-             changed = server_power_cycle(server, timeout=timeout, 
+             server_mo = server_power_cycle(server, timeout=timeout,
                             interval=interval, serverid_=server_id)
             
-    return change, state
+    return getattr(server_mo, 'oper_power')
 
 
-def setup_server_led(server, module, locator_led):
+def setup_server_led(server, params, locator_led):
     from imcsdk.apis.server.serveractions import locator_led_off
     from imcsdk.apis.server.serveractions import locator_led_on
 
-    server_id, chassis_id = ansible["server_id"], ansible["chassis_id"]
+    server_id, chassis_id = params["server_id"], params["chassis_id"]
     
     # no method for determining current LED status.
     if locator_led == "on": 
@@ -118,16 +116,15 @@ def setup_server_led(server, module, locator_led):
 
 def setup_server(server, module):
     ansible = module.params
-    status, locator_led = ansible["status"], ansible["locator_led"]
+    status, locator_led = ansible["state"], ansible["locator_led"]
     
     if status is not None:
-        power_changed, power_state = setup_server_power(
-            server, module, status, timeout, interval)
+        oper_power = setup_server_power(server, module.params, status)
         
     if locator_led is not None:
-        led_changed = setup_server_led(server, module, locator_led)
+        led_changed = setup_server_led(server, module.params, locator_led)
             
-    return (power_changed or led_changed), power_state
+    return (oper_power != status or led_changed), oper_power
 
 
 def setup(server, module):
@@ -137,8 +134,6 @@ def setup(server, module):
     try:
         results["changed"], results['power_state'] = setup_server(
             server, module)
-
-
     except Exception as e:
         err = True
         results["msg"] = "setup error: %s " % str(e)
@@ -171,7 +166,7 @@ def main():
             secure=dict(required=False, default=None),
             proxy=dict(required=False, default=None)
         ),
-        supports_check_mode=True
+        supports_check_mode=False
     )
 
     conn = ImcConnection(module)
