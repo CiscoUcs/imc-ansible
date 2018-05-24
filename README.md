@@ -1,4 +1,8 @@
+[![](https://ucspython.herokuapp.com/badge.svg)](https://ucspython.herokuapp.com)
+
 # imc-ansible
+
+* Apache License, Version 2.0 (the "License")
 
 # install
 - ansible must be installed
@@ -103,3 +107,8 @@ PLAY RECAP
 *********************************************************************
 fpmr1_192.168.1.1       : ok=13   changed=12   unreachable=0    failed=0
 ```
+
+# Community:
+
+* We are on Slack - slack requires registration, but the ucspython team is open invitation to
+  anyone to register [here](https://ucspython.herokuapp.com) 
