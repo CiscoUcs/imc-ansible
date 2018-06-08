@@ -112,7 +112,7 @@ def traverse_objects(module, imc, managed_object, mo=''):
 
         if not props_match:
             if not module.check_mode:
-                imc.handle.set_mo(mo)
+                imc.handle.add_mo(mo)
             imc.result['changed'] = True
 
     if managed_object.get('children'):
