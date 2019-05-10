@@ -220,11 +220,11 @@ def virtual_drive(server, module):
                 if vd_name is None:
                     vd_name = vd_name_derive(ansible["raid_level"],
                                              ansible["drive_group"])
-	        vd = vd_query_by_name(handle=server,
-                                      controller_type=ansible['controller_type'],
- 			              controller_slot=ansible['controller_slot'],
- 			              name=vd_name,
- 			              server_id=ansible['server_id'])
+                vd = vd_query_by_name(handle=server,
+                                        controller_type=ansible['controller_type'],
+                                        controller_slot=ansible['controller_slot'],
+                                        name=vd_name,
+                                        server_id=ansible['server_id'])
                 vd.admin_action = 'set-boot-drive'
                 server.set_mo(vd)
         else:
