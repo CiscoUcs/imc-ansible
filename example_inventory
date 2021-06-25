@@ -1,0 +1,7 @@
+[cimc]
+10.29.131.102
+172.28.225.[122:123]
+
+[cimc:vars]
+password=password
+username=admin

@@ -11,24 +11,31 @@ sudo pip install ansible
 ```
 - you will need the latest imcsdk.
 ```
-git clone https://github.com/ciscoucs/imcsdk
-cd imcsdk
-sudo make install
+sudo pip install imcsdk
 ```
-- clone this repository and install the ansible modules
+- clone this repository
 ```
 git clone https://github.com/ciscoucs/imc-ansible
 cd imc-ansible
-sudo python install.py
+```
+- You will need to run playbooks from the imc-ansible module directory so that local modules are available from the library subdirectory.
+- See https://docs.ansible.com/ansible/latest/dev_guide/developing_locally.html for more information on Ansible's use of local modules.
+
+# imc_managed_objects module usage and examples
+The imc_managed_objects module provides access to the full IMC API through the imcsdk.  imc_managed_objects requires the imcsdk
+module, class, and any needed properties for configuration.  Visore (available on the IMC browser at 'https://<imc ip>/visore.html') can
+be used to help find Class names and required proerties on objects.
+
+Examples using imc_managed_objects are provided in the playbooks directory, and here is example usage:
+```
+ansible-playbook -i example_inventory vnic_config.yml
+
+PLAY [cimc] ***************************************************************************************************************************************************************************
+
+TASK [Gather IMC inventory] ***
 ```
 
-# uninstall
-```
-cd imc-ansible
-sudo python uninstall.py
-```
-
-# usage
+# roles usage
 `site.yml` and the various playbooks in the `roles` folder can be used as an
 example on how to use the various modules that are a part of this package.
 
@@ -40,7 +47,7 @@ plays as shown in the next section of the readme.
 server.
 
 
-# sample run
+# sample run using site.yml and roles
 ```
 ➔ ansible-playbook -i inventory site.yml
 
