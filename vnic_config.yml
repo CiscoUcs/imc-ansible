@@ -1,0 +1,47 @@
+---
+- hosts: "{{ target }}"
+  connection: local
+  gather_facts: false
+  vars:
+    # any vars including target can be specified on cmd line with the -e option (e.g., -e target=myhosts)
+    target: cimc
+    vnic_dn_base: sys/rack-unit-1
+    login_info: &login_info
+      hostname: "{{ inventory_hostname }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      state: "{{ state | default(omit) }}"
+    cisco_login_info: &cisco_login_info
+      ip: "{{ inventory_hostname }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      state: "{{ state | default(omit) }}"
+  tasks:
+    - name: Gather IMC inventory
+      cisco_imc_inventory:
+        <<: *cisco_login_info
+      delegate_to: localhost
+      tags: [inventory]
+    - name: Query vNIC
+      imc_query:
+        <<: *login_info
+        distinguished_names: "{{ vnic_dn_base }}/adaptor-MLOM/host-eth-eth0" 
+      delegate_to: localhost
+      register: result
+    - name: vNIC eth1 config
+      imc_managed_objects:
+        <<: *login_info
+        objects:
+          - module: imcsdk.mometa.adaptor.AdaptorEthGenProfile
+            class: AdaptorEthGenProfile
+            properties:
+              parent_mo_or_dn: "{{ vnic_dn_base }}/adaptor-MLOM/host-eth-eth0"
+              order: '0'
+              vlan_mode: TRUNK
+          - module: imcsdk.mometa.adaptor.AdaptorEthGenProfile
+            class: AdaptorEthGenProfile
+            properties:
+              parent_mo_or_dn: "{{ vnic_dn_base }}/adaptor-MLOM/host-eth-eth1"
+              order: '1'
+              vlan_mode: TRUNK
+      delegate_to: localhost
