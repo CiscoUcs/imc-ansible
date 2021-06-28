@@ -28,7 +28,7 @@
         distinguished_names: "{{ vnic_dn_base }}/adaptor-MLOM/host-eth-eth0" 
       delegate_to: localhost
       register: result
-    - name: vNIC eth1 config
+    - name: vNIC config
       imc_managed_objects:
         <<: *login_info
         objects:

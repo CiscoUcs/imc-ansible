@@ -1,0 +1,23 @@
+---
+- hosts: "{{ target }}"
+  connection: local
+  gather_facts: false
+  vars:
+    # any vars including target can be specified on cmd line with the -e option (e.g., -e target=myhosts)
+    target: cimc
+    login_info: &login_info
+      hostname: "{{ inventory_hostname }}"
+      username: "{{ username }}"
+      password: "{{ password }}"
+      state: "{{ state | default(omit) }}"
+  tasks:
+    - name: BIOS config
+      imc_managed_objects:
+        <<: *login_info
+        objects:
+          - module: imcsdk.mometa.bios.BiosVfIntelVTForDirectedIO
+            class: BiosVfIntelVTForDirectedIO
+            properties:
+              parent_mo_or_dn: sys/rack-unit-1/bios/bios-settings
+              vp_intel_vtd_coherency_support: disabled
+      delegate_to: localhost
