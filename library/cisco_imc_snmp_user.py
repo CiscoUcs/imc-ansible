@@ -5,25 +5,36 @@ from ansible.module_utils.basic import *
 
 DOCUMENTATION = '''
 ---
-module: cisco_imc_ipmi
-short_description: Configures ipmi on a Cisco IMC Server
+module: cisco_imc_snmp_user
+short_description: Configures SNMP user on a Cisco IMC Server
 version_added: 0.9.0.0
 description:
-   -  Configures ipmi on a Cisco IMC Server
+   -  Configures the SNMP user on a Cisco IMC Server
 Input Params:
-    priv:
-        description: privilege level
+    name:
+        description: snmp username
+        required: True
+    security_level:
+        description: security level
         required: False
-        choices: ['admin', 'user', 'read-only']
-        default: "admin"
-    key:
-        description: Optional encryption key as hexadecimal string
+        choices: ['authpriv', 'authnopriv', 'noauthnopriv']
+        default: "authpriv"
+    auth_pwd:
+        description: password
         required: False
-        default: "'0'*40"
-    server_id:
-        description: Server Id to be specified for C3260 platforms
+    auth:
+        description: auth type
         required: False
-        default: 1
+        choices: ['MD5', 'SHA']
+        default: "MD5"
+    privacy_pwd:
+        description: privacy password
+        required: False
+    privacy:
+        description: privacy type
+        required: False
+        choices: ['AES', 'DES']
+        default: "AES"
 
 requirements: ['imcsdk']
 author: "Rahul Gupta(ragupta4@cisco.com)"
@@ -32,10 +43,13 @@ author: "Rahul Gupta(ragupta4@cisco.com)"
 
 EXAMPLES = '''
 - name:
-  cisco_imc_ipmi:
-    priv:
-    key:
-    server_id:
+  cisco_imc_snmp_user:
+    name:
+    security_level:
+    auth_pwd:
+    auth:
+    privacy_pwd:
+    privacy:
     state: "present"
     ip: "192.168.1.1"
     username: "admin"
@@ -45,9 +59,12 @@ EXAMPLES = '''
 
 def _argument_mo():
     return dict(
-                priv=dict(required=False, type='str', choices=['admin', 'user', 'read-only'], default="admin"),
-                key=dict(required=False, type='str', default="0"*40),
-                server_id=dict(required=False, type='str', default=1),
+                name=dict(required=True, type='str'),
+                security_level=dict(required=False, type='str', choices=['authpriv', 'authnopriv', 'noauthnopriv'], default="authpriv"),
+                auth_pwd=dict(required=False, type='str'),
+                auth=dict(required=False, type='str', choices=['MD5', 'SHA'], default="MD5"),
+                privacy_pwd=dict(required=False, type='str'),
+                privacy=dict(required=False, type='str', choices=['AES', 'DES'], default="AES"),
     )
 
 
@@ -97,23 +114,23 @@ def _get_mo_params(params):
     return args
 
 
-def setup_ipmi(server, module):
-    from imcsdk.apis.admin.ipmi import ipmi_enable
-    from imcsdk.apis.admin.ipmi import ipmi_disable
-    from imcsdk.apis.admin.ipmi import is_ipmi_enabled
+def setup_snmp_user(server, module):
+    from imcsdk.apis.admin.snmp import snmp_user_add
+    from imcsdk.apis.admin.snmp import snmp_user_remove
+    from imcsdk.apis.admin.snmp import snmp_user_exists
 
     ansible = module.params
     args_mo  =  _get_mo_params(ansible)
-    exists, mo = is_ipmi_enabled(handle=server, **args_mo)
+    exists, mo = snmp_user_exists(handle=server, **args_mo)
 
     if ansible["state"] == "present":
         if module.check_mode or exists:
             return not exists, False
-        ipmi_enable(handle=server, **args_mo)
+        snmp_user_add(handle=server, **args_mo)
     else:
         if module.check_mode or not exists:
             return exists, False
-        ipmi_disable(server, args_mo['server_id'])
+        snmp_user_remove(server, mo.name)
 
     return True, False
 
@@ -123,7 +140,7 @@ def setup(server, module):
     err = False
 
     try:
-        results["changed"], err = setup_ipmi(server, module)
+        results["changed"], err = setup_snmp_user(server, module)
 
     except Exception as e:
         err = True

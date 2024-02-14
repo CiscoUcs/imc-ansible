@@ -5,25 +5,26 @@ from ansible.module_utils.basic import *
 
 DOCUMENTATION = '''
 ---
-module: cisco_imc_ipmi
-short_description: Configures ipmi on a Cisco IMC Server
+module: cisco_imc_vmedia
+short_description: Configures vmedia on a Cisco IMC Server
 version_added: 0.9.0.0
 description:
-   -  Configures ipmi on a Cisco IMC Server
+   -  Configures the vmedia on a Cisco IMC Server
 Input Params:
-    priv:
-        description: privilege level
+    encryption_state:
+        description: Encrypt virtual media communications
         required: False
-        choices: ['admin', 'user', 'read-only']
-        default: "admin"
-    key:
-        description: Optional encryption key as hexadecimal string
+        choices: ['disabled', 'enabled']
+        default: "disabled"
+    low_power_usb:
+        description: Enable low power usb
         required: False
-        default: "'0'*40"
+        choices: ['disabled', 'enabled']
+        default: "disabled"
     server_id:
         description: Server Id to be specified for C3260 platforms
         required: False
-        default: 1
+        default: "1"
 
 requirements: ['imcsdk']
 author: "Rahul Gupta(ragupta4@cisco.com)"
@@ -32,9 +33,9 @@ author: "Rahul Gupta(ragupta4@cisco.com)"
 
 EXAMPLES = '''
 - name:
-  cisco_imc_ipmi:
-    priv:
-    key:
+  cisco_imc_vmedia:
+    encryption_state:
+    low_power_usb:
     server_id:
     state: "present"
     ip: "192.168.1.1"
@@ -45,9 +46,9 @@ EXAMPLES = '''
 
 def _argument_mo():
     return dict(
-                priv=dict(required=False, type='str', choices=['admin', 'user', 'read-only'], default="admin"),
-                key=dict(required=False, type='str', default="0"*40),
-                server_id=dict(required=False, type='str', default=1),
+                encryption_state=dict(required=False, type='str', choices=['disabled', 'enabled'], default="disabled"),
+                low_power_usb=dict(required=False, type='str', choices=['disabled', 'enabled'], default="disabled"),
+                server_id=dict(required=False, type='str', default="1"),
     )
 
 
@@ -97,23 +98,23 @@ def _get_mo_params(params):
     return args
 
 
-def setup_ipmi(server, module):
-    from imcsdk.apis.admin.ipmi import ipmi_enable
-    from imcsdk.apis.admin.ipmi import ipmi_disable
-    from imcsdk.apis.admin.ipmi import is_ipmi_enabled
+def setup_vmedia(server, module):
+    from imcsdk.apis.server.remotepresence import vmedia_setup
+    from imcsdk.apis.server.remotepresence import vmedia_disable
+    from imcsdk.apis.server.remotepresence import is_vmedia_enabled
 
     ansible = module.params
     args_mo  =  _get_mo_params(ansible)
-    exists, mo = is_ipmi_enabled(handle=server, **args_mo)
+    exists, mo = is_vmedia_enabled(handle=server, **args_mo)
 
     if ansible["state"] == "present":
         if module.check_mode or exists:
             return not exists, False
-        ipmi_enable(handle=server, **args_mo)
+        vmedia_setup(handle=server, **args_mo)
     else:
         if module.check_mode or not exists:
             return exists, False
-        ipmi_disable(server, args_mo['server_id'])
+        vmedia_disable(server)
 
     return True, False
 
@@ -123,7 +124,7 @@ def setup(server, module):
     err = False
 
     try:
-        results["changed"], err = setup_ipmi(server, module)
+        results["changed"], err = setup_vmedia(server, module)
 
     except Exception as e:
         err = True

@@ -5,25 +5,38 @@ from ansible.module_utils.basic import *
 
 DOCUMENTATION = '''
 ---
-module: cisco_imc_ipmi
-short_description: Configures ipmi on a Cisco IMC Server
+module: cisco_imc_vmedia_mount
+short_description: mounts vmedia on a Cisco IMC Server
 version_added: 0.9.0.0
 description:
-   -  Configures ipmi on a Cisco IMC Server
+   -  mounts the vmedia on a Cisco IMC Server
 Input Params:
-    priv:
-        description: privilege level
+    volume_name:
+        description: Name of the volume or identity of the image
+        required: True
+    map:
+        description: mount protocol
+        required: True
+        choices: ['nfs', 'cifs', 'www']
+    mount_options:
+        description: Options to be passed while mounting the image
         required: False
-        choices: ['admin', 'user', 'read-only']
-        default: "admin"
-    key:
-        description: Optional encryption key as hexadecimal string
+    remote_share:
+        description: uri of the image
         required: False
-        default: "'0'*40"
+    remote_file:
+        description: name of the image
+        required: False
+    user_id:
+        description: username
+        required: False
+    password:
+        description: password
+        required: False
     server_id:
         description: Server Id to be specified for C3260 platforms
         required: False
-        default: 1
+        default: "1"
 
 requirements: ['imcsdk']
 author: "Rahul Gupta(ragupta4@cisco.com)"
@@ -32,9 +45,14 @@ author: "Rahul Gupta(ragupta4@cisco.com)"
 
 EXAMPLES = '''
 - name:
-  cisco_imc_ipmi:
-    priv:
-    key:
+  cisco_imc_vmedia_mount:
+    volume_name:
+    map:
+    mount_options:
+    remote_share:
+    remote_file:
+    user_id:
+    password:
     server_id:
     state: "present"
     ip: "192.168.1.1"
@@ -45,9 +63,14 @@ EXAMPLES = '''
 
 def _argument_mo():
     return dict(
-                priv=dict(required=False, type='str', choices=['admin', 'user', 'read-only'], default="admin"),
-                key=dict(required=False, type='str', default="0"*40),
-                server_id=dict(required=False, type='str', default=1),
+                volume_name=dict(required=True, type='str'),
+                map=dict(required=True, type='str', choices=['nfs', 'cifs', 'www']),
+                mount_options=dict(required=False, type='str'),
+                remote_share=dict(required=False, type='str'),
+                remote_file=dict(required=False, type='str'),
+                user_id=dict(required=False, type='str'),
+                password=dict(required=False, type='str'),
+                server_id=dict(required=False, type='str', default="1"),
     )
 
 
@@ -97,23 +120,23 @@ def _get_mo_params(params):
     return args
 
 
-def setup_ipmi(server, module):
-    from imcsdk.apis.admin.ipmi import ipmi_enable
-    from imcsdk.apis.admin.ipmi import ipmi_disable
-    from imcsdk.apis.admin.ipmi import is_ipmi_enabled
+def setup_vmedia_mount(server, module):
+    from imcsdk.apis.server.remotepresence import vmedia_mount_add
+    from imcsdk.apis.server.remotepresence import vmedia_mount_remove
+    from imcsdk.apis.server.remotepresence import vmedia_mount_exists
 
     ansible = module.params
     args_mo  =  _get_mo_params(ansible)
-    exists, mo = is_ipmi_enabled(handle=server, **args_mo)
+    exists, mo = vmedia_mount_exists(handle=server, **args_mo)
 
     if ansible["state"] == "present":
         if module.check_mode or exists:
             return not exists, False
-        ipmi_enable(handle=server, **args_mo)
+        vmedia_mount_add(handle=server, **args_mo)
     else:
         if module.check_mode or not exists:
             return exists, False
-        ipmi_disable(server, args_mo['server_id'])
+        vmedia_mount_remove(server, mo.volume_name, args_mo['server_id'])
 
     return True, False
 
@@ -123,7 +146,7 @@ def setup(server, module):
     err = False
 
     try:
-        results["changed"], err = setup_ipmi(server, module)
+        results["changed"], err = setup_vmedia_mount(server, module)
 
     except Exception as e:
         err = True

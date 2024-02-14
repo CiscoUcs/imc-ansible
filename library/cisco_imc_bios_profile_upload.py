@@ -5,24 +5,34 @@ from ansible.module_utils.basic import *
 
 DOCUMENTATION = '''
 ---
-module: cisco_imc_ipmi
-short_description: Configures ipmi on a Cisco IMC Server
+module: cisco_imc_bios_profile_upload
+short_description: Uploads a user configured bios profile in json format.
 version_added: 0.9.0.0
 description:
-   -  Configures ipmi on a Cisco IMC Server
+   -  Uploads a user configured bios profile in json format.
+      Cisco IMC supports uploading a maximum of 3 profiles
 Input Params:
-    priv:
-        description: privilege level
-        required: False
-        choices: ['admin', 'user', 'read-only']
-        default: "admin"
-    key:
-        description: Optional encryption key as hexadecimal string
-        required: False
-        default: "'0'*40"
+    remote_server:
+        description: ip address of the remote server
+        required: True
+    user:
+        description: remote server login user
+        required: True
+    pwd:
+        description: remote server login password
+        required: True
+    remote_file:
+        description: file_name with full path for the bios profile file
+        required: True
+    protocol:
+        description: protocol to transfer file to remote server
+        required: True
+        choices: ['ftp', 'http', 'none', 'scp', 'sftp', 'tftp']
     server_id:
-        description: Server Id to be specified for C3260 platforms
+        description: d of the server to perform this operation on C3260
+        platforms
         required: False
+        choices:
         default: 1
 
 requirements: ['imcsdk']
@@ -32,10 +42,12 @@ author: "Rahul Gupta(ragupta4@cisco.com)"
 
 EXAMPLES = '''
 - name:
-  cisco_imc_ipmi:
-    priv:
-    key:
-    server_id:
+  cisco_imc_bios_profile_upload:
+    remote_server:
+    user:
+    pwd:
+    remote_file:
+    protocol:
     state: "present"
     ip: "192.168.1.1"
     username: "admin"
@@ -45,18 +57,13 @@ EXAMPLES = '''
 
 def _argument_mo():
     return dict(
-                priv=dict(required=False, type='str', choices=['admin', 'user', 'read-only'], default="admin"),
-                key=dict(required=False, type='str', default="0"*40),
-                server_id=dict(required=False, type='str', default=1),
-    )
-
-
-def _argument_state():
-    return dict(
-        state=dict(required=False,
-                   default="present",
-                   choices=['present', 'absent'],
-                   type='str'),
+                remote_server=dict(required=True, type='str'),
+                user=dict(required=True, type='str'),
+                pwd=dict(required=True, type='str'),
+                remote_file=dict(required=True, type='str'),
+                protocol=dict(required=True, type='str',
+                    choices=['ftp', 'http', 'none', 'scp', 'sftp', 'tftp']),
+                server_id=dict(required=False, type='str', default='1')
     )
 
 
@@ -78,7 +85,6 @@ def _argument_imc_connection():
 def _ansible_module_create():
     argument_spec = dict()
     argument_spec.update(_argument_mo())
-    argument_spec.update(_argument_state())
     argument_spec.update(_argument_imc_connection())
 
     return AnsibleModule(argument_spec,
@@ -89,31 +95,24 @@ def _get_mo_params(params):
     from ansible.module_utils.cisco_imc import ImcConnection
     args = {}
     for key in params:
-        if (key == 'state' or
-            ImcConnection.is_login_param(key) or
+        if ( ImcConnection.is_login_param(key) or
             params.get(key) is None):
             continue
         args[key] = params.get(key)
     return args
 
 
-def setup_ipmi(server, module):
-    from imcsdk.apis.admin.ipmi import ipmi_enable
-    from imcsdk.apis.admin.ipmi import ipmi_disable
-    from imcsdk.apis.admin.ipmi import is_ipmi_enabled
+def setup_bios_profile_upload(server, module):
+    from imcsdk.apis.server.bios import bios_profile_upload
 
     ansible = module.params
+    exists = False
     args_mo  =  _get_mo_params(ansible)
-    exists, mo = is_ipmi_enabled(handle=server, **args_mo)
-
-    if ansible["state"] == "present":
-        if module.check_mode or exists:
-            return not exists, False
-        ipmi_enable(handle=server, **args_mo)
-    else:
-        if module.check_mode or not exists:
-            return exists, False
-        ipmi_disable(server, args_mo['server_id'])
+    if module.check_mode or exists:
+        return not exists, False
+    mo = bios_profile_upload(handle=server, **args_mo)
+    if "failed" in mo.bios_profile_upload_status:
+        return False, True
 
     return True, False
 
@@ -123,7 +122,12 @@ def setup(server, module):
     err = False
 
     try:
-        results["changed"], err = setup_ipmi(server, module)
+        results["changed"], err = setup_bios_profile_upload(server, module)
+        if err:
+            results["msg"] = "Bios Profile already exist. If there is any "\
+            "configuration change. Please remove the bios profile and "\
+            "re-upload."
+            err = False
 
     except Exception as e:
         err = True

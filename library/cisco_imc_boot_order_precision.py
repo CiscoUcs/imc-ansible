@@ -111,15 +111,15 @@ def main():
             server_id=dict(required=False, default=1, type='int'),
 
             # ImcHandle
-            server=dict(required=False, type='dict'),
+            imc_server=dict(required=False, type='dict'),
 
             # Imc server credentials
-            ip=dict(required=False, type='str'),
-            username=dict(required=False, default="admin", type='str'),
-            password=dict(required=False, type='str', no_log=True),
-            port=dict(required=False, default=None),
-            secure=dict(required=False, default=None),
-            proxy=dict(required=False, default=None)
+            imc_ip=dict(required=False, type='str'),
+            imc_username=dict(required=False, default="admin", type='str'),
+            imc_password=dict(required=False, type='str', no_log=True),
+            imc_port=dict(required=False, default=None),
+            imc_secure=dict(required=False, default=None),
+            imc_proxy=dict(required=False, default=None)
         ),
         supports_check_mode=True
     )

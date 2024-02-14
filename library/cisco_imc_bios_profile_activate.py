@@ -5,25 +5,26 @@ from ansible.module_utils.basic import *
 
 DOCUMENTATION = '''
 ---
-module: cisco_imc_ipmi
-short_description: Configures ipmi on a Cisco IMC Server
+module: cisco_imc_bios_profile_activate
+short_description: Activates bios profile on a Cisco IMC Server
 version_added: 0.9.0.0
 description:
-   -  Configures ipmi on a Cisco IMC Server
+   -  Activates bios profile on a Cisco IMC Server
 Input Params:
-    priv:
-        description: privilege level
+    name:
+        description: bios profile name
+        required: True
+    backup_on_activate:
+        description: Backup running bios configuration before activating this profile.Will overwrite the previous backup.
         required: False
-        choices: ['admin', 'user', 'read-only']
-        default: "admin"
-    key:
-        description: Optional encryption key as hexadecimal string
+        default: "True"
+    reboot_on_activate:
+        description: Reboot the host/server for the newer bios configuration to be applied.
         required: False
-        default: "'0'*40"
     server_id:
-        description: Server Id to be specified for C3260 platforms
+        description: Id of the server to perform this operation on C3260 platforms.
         required: False
-        default: 1
+        default: "1"
 
 requirements: ['imcsdk']
 author: "Rahul Gupta(ragupta4@cisco.com)"
@@ -32,9 +33,10 @@ author: "Rahul Gupta(ragupta4@cisco.com)"
 
 EXAMPLES = '''
 - name:
-  cisco_imc_ipmi:
-    priv:
-    key:
+  cisco_imc_bios_profile_activate:
+    name:
+    backup_on_activate:
+    reboot_on_activate:
     server_id:
     state: "present"
     ip: "192.168.1.1"
@@ -45,18 +47,10 @@ EXAMPLES = '''
 
 def _argument_mo():
     return dict(
-                priv=dict(required=False, type='str', choices=['admin', 'user', 'read-only'], default="admin"),
-                key=dict(required=False, type='str', default="0"*40),
-                server_id=dict(required=False, type='str', default=1),
-    )
-
-
-def _argument_state():
-    return dict(
-        state=dict(required=False,
-                   default="present",
-                   choices=['present', 'absent'],
-                   type='str'),
+                name=dict(required=True, type='str'),
+                backup_on_activate=dict(required=False, type='bool', default=True),
+                reboot_on_activate=dict(required=False, type='bool', default=False),
+                server_id=dict(required=False, type='str', default="1"),
     )
 
 
@@ -78,7 +72,6 @@ def _argument_imc_connection():
 def _ansible_module_create():
     argument_spec = dict()
     argument_spec.update(_argument_mo())
-    argument_spec.update(_argument_state())
     argument_spec.update(_argument_imc_connection())
 
     return AnsibleModule(argument_spec,
@@ -89,31 +82,24 @@ def _get_mo_params(params):
     from ansible.module_utils.cisco_imc import ImcConnection
     args = {}
     for key in params:
-        if (key == 'state' or
-            ImcConnection.is_login_param(key) or
+        if ( ImcConnection.is_login_param(key) or
             params.get(key) is None):
             continue
         args[key] = params.get(key)
     return args
 
 
-def setup_ipmi(server, module):
-    from imcsdk.apis.admin.ipmi import ipmi_enable
-    from imcsdk.apis.admin.ipmi import ipmi_disable
-    from imcsdk.apis.admin.ipmi import is_ipmi_enabled
+def setup_bios_profile_activate(server, module):
+    from imcsdk.apis.server.bios import bios_profile_activate
+    from imcsdk.apis.server.bios import is_bios_profile_enabled
 
     ansible = module.params
     args_mo  =  _get_mo_params(ansible)
-    exists, mo = is_ipmi_enabled(handle=server, **args_mo)
+    exists = is_bios_profile_enabled(server, args_mo['name'], args_mo['server_id'])
 
-    if ansible["state"] == "present":
-        if module.check_mode or exists:
-            return not exists, False
-        ipmi_enable(handle=server, **args_mo)
-    else:
-        if module.check_mode or not exists:
-            return exists, False
-        ipmi_disable(server, args_mo['server_id'])
+    if module.check_mode or exists:
+        return not exists, False
+    bios_profile_activate(handle=server, **args_mo)
 
     return True, False
 
@@ -123,7 +109,7 @@ def setup(server, module):
     err = False
 
     try:
-        results["changed"], err = setup_ipmi(server, module)
+        results["changed"], err = setup_bios_profile_activate(server, module)
 
     except Exception as e:
         err = True

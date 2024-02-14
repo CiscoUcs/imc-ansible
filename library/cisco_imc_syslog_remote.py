@@ -5,25 +5,24 @@ from ansible.module_utils.basic import *
 
 DOCUMENTATION = '''
 ---
-module: cisco_imc_ipmi
-short_description: Configures ipmi on a Cisco IMC Server
+module: cisco_imc_syslog_remote
+short_description: Enables remote system logs on a Cisco IMC Server
 version_added: 0.9.0.0
 description:
-   -  Configures ipmi on a Cisco IMC Server
+   -  Enables system log for remote client on a Cisco IMC Server
 Input Params:
-    priv:
-        description: privilege level
+    hostname:
+        description: ip address of the remote host
+        required: True
+    name:
+        description: remote host type
         required: False
-        choices: ['admin', 'user', 'read-only']
-        default: "admin"
-    key:
-        description: Optional encryption key as hexadecimal string
+        choices: ['primary', 'secondary', 'tertiary']
+        default: "primary"
+    port:
+        description: remote host port
         required: False
-        default: "'0'*40"
-    server_id:
-        description: Server Id to be specified for C3260 platforms
-        required: False
-        default: 1
+        default: "514"
 
 requirements: ['imcsdk']
 author: "Rahul Gupta(ragupta4@cisco.com)"
@@ -32,10 +31,10 @@ author: "Rahul Gupta(ragupta4@cisco.com)"
 
 EXAMPLES = '''
 - name:
-  cisco_imc_ipmi:
-    priv:
-    key:
-    server_id:
+  cisco_imc_syslog_remote:
+    hostname:
+    name:
+    port:
     state: "present"
     ip: "192.168.1.1"
     username: "admin"
@@ -45,9 +44,9 @@ EXAMPLES = '''
 
 def _argument_mo():
     return dict(
-                priv=dict(required=False, type='str', choices=['admin', 'user', 'read-only'], default="admin"),
-                key=dict(required=False, type='str', default="0"*40),
-                server_id=dict(required=False, type='str', default=1),
+                hostname=dict(required=True, type='str'),
+                name=dict(required=False, type='str', choices=['primary', 'secondary', 'tertiary'], default="primary"),
+                port=dict(required=False, type='str', default="514"),
     )
 
 
@@ -55,7 +54,7 @@ def _argument_state():
     return dict(
         state=dict(required=False,
                    default="present",
-                   choices=['present', 'absent'],
+                   choices=['present', 'absent', 'clear'],
                    type='str'),
     )
 
@@ -97,24 +96,37 @@ def _get_mo_params(params):
     return args
 
 
-def setup_ipmi(server, module):
-    from imcsdk.apis.admin.ipmi import ipmi_enable
-    from imcsdk.apis.admin.ipmi import ipmi_disable
-    from imcsdk.apis.admin.ipmi import is_ipmi_enabled
+def setup_syslog_remote(server, module):
+    from imcsdk.apis.admin.syslog import syslog_remote_enable
+    from imcsdk.apis.admin.syslog import syslog_remote_disable
+    from imcsdk.apis.admin.syslog import is_syslog_remote_enabled
+    from imcsdk.apis.admin.syslog import syslog_remote_clear
+    from imcsdk.apis.admin.syslog import is_syslog_remote_clear
 
     ansible = module.params
     args_mo  =  _get_mo_params(ansible)
-    exists, mo = is_ipmi_enabled(handle=server, **args_mo)
+
+    if ansible["state"] == "clear":
+        exists, mo = is_syslog_remote_clear(handle=server,
+                                            name=args_mo['name'])
+        if module.check_mode or exists:
+            return not exists, False
+        syslog_remote_clear(handle=server, name=args_mo['name'])
+        return True, False
+
+    exists, mo = is_syslog_remote_enabled(handle=server, **args_mo)
 
     if ansible["state"] == "present":
         if module.check_mode or exists:
             return not exists, False
-        ipmi_enable(handle=server, **args_mo)
+        syslog_remote_enable(handle=server, **args_mo)
     else:
         if module.check_mode or not exists:
             return exists, False
-        ipmi_disable(server, args_mo['server_id'])
-
+        if ansible["state"] == "absent":
+            syslog_remote_disable(server, mo.name)
+        elif ansible["state"] == "clear":
+            syslog_remote_clear(server, mo.name)
     return True, False
 
 
@@ -123,7 +135,7 @@ def setup(server, module):
     err = False
 
     try:
-        results["changed"], err = setup_ipmi(server, module)
+        results["changed"], err = setup_syslog_remote(server, module)
 
     except Exception as e:
         err = True

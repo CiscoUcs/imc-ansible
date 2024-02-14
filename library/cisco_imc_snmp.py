@@ -5,25 +5,33 @@ from ansible.module_utils.basic import *
 
 DOCUMENTATION = '''
 ---
-module: cisco_imc_ipmi
-short_description: Configures ipmi on a Cisco IMC Server
+module: cisco_imc_snmp
+short_description: Configures SNMP on a Cisco IMC Server
 version_added: 0.9.0.0
 description:
-   -  Configures ipmi on a Cisco IMC Server
+   -  Configures the SNMP on a Cisco IMC Server
 Input Params:
-    priv:
-        description: privilege level
+    community:
+        description: community name
         required: False
-        choices: ['admin', 'user', 'read-only']
-        default: "admin"
-    key:
-        description: Optional encryption key as hexadecimal string
+    privilege:
+        description: SNMP community access
         required: False
-        default: "'0'*40"
-    server_id:
-        description: Server Id to be specified for C3260 platforms
+        choices: ['disabled', 'limited', 'full']
+        default: "disabled"
+    trap_community:
+        description: community to be used when generating traps
         required: False
-        default: 1
+    sys_contact:
+        description: system contact
+        required: False
+    sys_location:
+        description: system location
+        required: False
+    port:
+        description: SNMP port
+        required: False
+        default: "161"
 
 requirements: ['imcsdk']
 author: "Rahul Gupta(ragupta4@cisco.com)"
@@ -32,10 +40,13 @@ author: "Rahul Gupta(ragupta4@cisco.com)"
 
 EXAMPLES = '''
 - name:
-  cisco_imc_ipmi:
-    priv:
-    key:
-    server_id:
+  cisco_imc_snmp:
+    community:
+    privilege:
+    trap_community:
+    sys_contact:
+    sys_location:
+    port:
     state: "present"
     ip: "192.168.1.1"
     username: "admin"
@@ -45,9 +56,12 @@ EXAMPLES = '''
 
 def _argument_mo():
     return dict(
-                priv=dict(required=False, type='str', choices=['admin', 'user', 'read-only'], default="admin"),
-                key=dict(required=False, type='str', default="0"*40),
-                server_id=dict(required=False, type='str', default=1),
+                community=dict(required=False, type='str'),
+                com2_sec=dict(required=False, type='str', choices=['disabled', 'limited', 'full'], default="disabled"),
+                trap_community=dict(required=False, type='str'),
+                sys_contact=dict(required=False, type='str'),
+                sys_location=dict(required=False, type='str'),
+                port=dict(required=False, type='str', default="161"),
     )
 
 
@@ -97,23 +111,23 @@ def _get_mo_params(params):
     return args
 
 
-def setup_ipmi(server, module):
-    from imcsdk.apis.admin.ipmi import ipmi_enable
-    from imcsdk.apis.admin.ipmi import ipmi_disable
-    from imcsdk.apis.admin.ipmi import is_ipmi_enabled
+def setup_snmp(server, module):
+    from imcsdk.apis.admin.snmp import snmp_enable
+    from imcsdk.apis.admin.snmp import snmp_disable
+    from imcsdk.apis.admin.snmp import is_snmp_enabled
 
     ansible = module.params
     args_mo  =  _get_mo_params(ansible)
-    exists, mo = is_ipmi_enabled(handle=server, **args_mo)
+    exists, mo = is_snmp_enabled(handle=server, **args_mo)
 
     if ansible["state"] == "present":
         if module.check_mode or exists:
             return not exists, False
-        ipmi_enable(handle=server, **args_mo)
+        snmp_enable(handle=server, **args_mo)
     else:
         if module.check_mode or not exists:
             return exists, False
-        ipmi_disable(server, args_mo['server_id'])
+        snmp_disable(server)
 
     return True, False
 
@@ -123,7 +137,7 @@ def setup(server, module):
     err = False
 
     try:
-        results["changed"], err = setup_ipmi(server, module)
+        results["changed"], err = setup_snmp(server, module)
 
     except Exception as e:
         err = True

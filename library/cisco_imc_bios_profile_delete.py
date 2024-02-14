@@ -5,25 +5,19 @@ from ansible.module_utils.basic import *
 
 DOCUMENTATION = '''
 ---
-module: cisco_imc_ipmi
-short_description: Configures ipmi on a Cisco IMC Server
+module: cisco_imc_bios_profile_delete
+short_description: Deletes the bios profile from a Cisco IMC Server
 version_added: 0.9.0.0
 description:
-   -  Configures ipmi on a Cisco IMC Server
+   -  Deletes the bios profile from a Cisco IMC Server
 Input Params:
-    priv:
-        description: privilege level
-        required: False
-        choices: ['admin', 'user', 'read-only']
-        default: "admin"
-    key:
-        description: Optional encryption key as hexadecimal string
-        required: False
-        default: "'0'*40"
+    name:
+        description: name of bios profile
+        required: True
     server_id:
-        description: Server Id to be specified for C3260 platforms
+        description: id of the server to perform this operation on C3260 platorms
         required: False
-        default: 1
+        default: "1"
 
 requirements: ['imcsdk']
 author: "Rahul Gupta(ragupta4@cisco.com)"
@@ -32,9 +26,8 @@ author: "Rahul Gupta(ragupta4@cisco.com)"
 
 EXAMPLES = '''
 - name:
-  cisco_imc_ipmi:
-    priv:
-    key:
+  cisco_imc_bios_profile_delete:
+    name:
     server_id:
     state: "present"
     ip: "192.168.1.1"
@@ -45,18 +38,8 @@ EXAMPLES = '''
 
 def _argument_mo():
     return dict(
-                priv=dict(required=False, type='str', choices=['admin', 'user', 'read-only'], default="admin"),
-                key=dict(required=False, type='str', default="0"*40),
-                server_id=dict(required=False, type='str', default=1),
-    )
-
-
-def _argument_state():
-    return dict(
-        state=dict(required=False,
-                   default="present",
-                   choices=['present', 'absent'],
-                   type='str'),
+                name=dict(required=True, type='str'),
+                server_id=dict(required=False, type='str', default="1"),
     )
 
 
@@ -78,7 +61,6 @@ def _argument_imc_connection():
 def _ansible_module_create():
     argument_spec = dict()
     argument_spec.update(_argument_mo())
-    argument_spec.update(_argument_state())
     argument_spec.update(_argument_imc_connection())
 
     return AnsibleModule(argument_spec,
@@ -89,31 +71,24 @@ def _get_mo_params(params):
     from ansible.module_utils.cisco_imc import ImcConnection
     args = {}
     for key in params:
-        if (key == 'state' or
-            ImcConnection.is_login_param(key) or
+        if ( ImcConnection.is_login_param(key) or
             params.get(key) is None):
             continue
         args[key] = params.get(key)
     return args
 
 
-def setup_ipmi(server, module):
-    from imcsdk.apis.admin.ipmi import ipmi_enable
-    from imcsdk.apis.admin.ipmi import ipmi_disable
-    from imcsdk.apis.admin.ipmi import is_ipmi_enabled
+def setup_bios_profile_delete(server, module):
+    from imcsdk.apis.server.bios import bios_profile_delete
+    from imcsdk.apis.server.bios import bios_profile_exists
 
     ansible = module.params
     args_mo  =  _get_mo_params(ansible)
-    exists, mo = is_ipmi_enabled(handle=server, **args_mo)
+    exists, mo = bios_profile_exists(handle=server, **args_mo)
 
-    if ansible["state"] == "present":
-        if module.check_mode or exists:
-            return not exists, False
-        ipmi_enable(handle=server, **args_mo)
-    else:
-        if module.check_mode or not exists:
-            return exists, False
-        ipmi_disable(server, args_mo['server_id'])
+    if module.check_mode or not exists:
+        return exists, False
+    bios_profile_delete(server, **args_mo)
 
     return True, False
 
@@ -123,7 +98,7 @@ def setup(server, module):
     err = False
 
     try:
-        results["changed"], err = setup_ipmi(server, module)
+        results["changed"], err = setup_bios_profile_delete(server, module)
 
     except Exception as e:
         err = True

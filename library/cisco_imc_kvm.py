@@ -5,25 +5,34 @@ from ansible.module_utils.basic import *
 
 DOCUMENTATION = '''
 ---
-module: cisco_imc_ipmi
-short_description: Configures ipmi on a Cisco IMC Server
+module: cisco_imc_kvm
+short_description: Configures virtual kvm on a Cisco IMC Server
 version_added: 0.9.0.0
 description:
-   -  Configures ipmi on a Cisco IMC Server
+   -  Configures the virtual kvm on a Cisco IMC Server
 Input Params:
-    priv:
-        description: privilege level
+    total_sessions:
+        description: Max no. of sessions allowed (1-4)
         required: False
-        choices: ['admin', 'user', 'read-only']
-        default: "admin"
-    key:
-        description: Optional encryption key as hexadecimal string
+        default: "1"
+    port:
+        description: Port used for kvm communication
         required: False
-        default: "'0'*40"
+        default: "2068"
+    encryption_state:
+        description: encryption_state video information sent over kvm
+        required: False
+        choices: ["enabled", "disabled"]
+        default: ""disabled"
+    local_video_state:
+        description: Mirror the kvm session on local monitor
+        required: False
+        choices: ["enabled", "disabled"]
+        default: ""disabled"
     server_id:
         description: Server Id to be specified for C3260 platforms
         required: False
-        default: 1
+        default: "1"
 
 requirements: ['imcsdk']
 author: "Rahul Gupta(ragupta4@cisco.com)"
@@ -32,9 +41,11 @@ author: "Rahul Gupta(ragupta4@cisco.com)"
 
 EXAMPLES = '''
 - name:
-  cisco_imc_ipmi:
-    priv:
-    key:
+  cisco_imc_kvm:
+    total_sessions:
+    port:
+    encryption_state:
+    local_video_state:
     server_id:
     state: "present"
     ip: "192.168.1.1"
@@ -45,9 +56,11 @@ EXAMPLES = '''
 
 def _argument_mo():
     return dict(
-                priv=dict(required=False, type='str', choices=['admin', 'user', 'read-only'], default="admin"),
-                key=dict(required=False, type='str', default="0"*40),
-                server_id=dict(required=False, type='str', default=1),
+                total_sessions=dict(required=False, type='str', default="1"),
+                port=dict(required=False, type='str', default="2068"),
+                encryption_state=dict(required=False, type='str', default="disabled"),
+                local_video_state=dict(required=False, type='str', default="disabled"),
+                server_id=dict(required=False, type='str', default="1"),
     )
 
 
@@ -97,23 +110,23 @@ def _get_mo_params(params):
     return args
 
 
-def setup_ipmi(server, module):
-    from imcsdk.apis.admin.ipmi import ipmi_enable
-    from imcsdk.apis.admin.ipmi import ipmi_disable
-    from imcsdk.apis.admin.ipmi import is_ipmi_enabled
+def setup_kvm(server, module):
+    from imcsdk.apis.server.remotepresence import kvm_setup
+    from imcsdk.apis.server.remotepresence import kvm_disable
+    from imcsdk.apis.server.remotepresence import is_kvm_enabled
 
     ansible = module.params
     args_mo  =  _get_mo_params(ansible)
-    exists, mo = is_ipmi_enabled(handle=server, **args_mo)
+    exists, mo = is_kvm_enabled(handle=server, **args_mo)
 
     if ansible["state"] == "present":
         if module.check_mode or exists:
             return not exists, False
-        ipmi_enable(handle=server, **args_mo)
+        kvm_setup(handle=server, **args_mo)
     else:
         if module.check_mode or not exists:
             return exists, False
-        ipmi_disable(server, args_mo['server_id'])
+        kvm_disable(server, args_mo['server_id'])
 
     return True, False
 
@@ -123,7 +136,7 @@ def setup(server, module):
     err = False
 
     try:
-        results["changed"], err = setup_ipmi(server, module)
+        results["changed"], err = setup_kvm(server, module)
 
     except Exception as e:
         err = True

@@ -5,25 +5,20 @@ from ansible.module_utils.basic import *
 
 DOCUMENTATION = '''
 ---
-module: cisco_imc_ipmi
-short_description: Configures ipmi on a Cisco IMC Server
+module: cisco_imc_syslog
+short_description: Configures system log on a Cisco IMC Server
 version_added: 0.9.0.0
 description:
-   -  Configures ipmi on a Cisco IMC Server
+   -  Configures the system log  on a Cisco IMC Server
 Input Params:
-    priv:
-        description: privilege level
+    local_severity:
+        description: local minimmum severity to report
         required: False
-        choices: ['admin', 'user', 'read-only']
-        default: "admin"
-    key:
-        description: Optional encryption key as hexadecimal string
+        choices: ['alert', 'critical', 'debug', 'emergency', 'error', 'informational', 'notice', 'warning']
+    remote_severity:
+        description: remote minimmum severity to report
         required: False
-        default: "'0'*40"
-    server_id:
-        description: Server Id to be specified for C3260 platforms
-        required: False
-        default: 1
+        choices: ['alert', 'critical', 'debug', 'emergency', 'error', 'informational', 'notice', 'warning']
 
 requirements: ['imcsdk']
 author: "Rahul Gupta(ragupta4@cisco.com)"
@@ -32,11 +27,9 @@ author: "Rahul Gupta(ragupta4@cisco.com)"
 
 EXAMPLES = '''
 - name:
-  cisco_imc_ipmi:
-    priv:
-    key:
-    server_id:
-    state: "present"
+  cisco_imc_syslog:
+    local_severity:
+    remote_severity:
     ip: "192.168.1.1"
     username: "admin"
     password: "password"
@@ -45,19 +38,10 @@ EXAMPLES = '''
 
 def _argument_mo():
     return dict(
-                priv=dict(required=False, type='str', choices=['admin', 'user', 'read-only'], default="admin"),
-                key=dict(required=False, type='str', default="0"*40),
-                server_id=dict(required=False, type='str', default=1),
+                local_severity=dict(required=False, type='str', choices=['alert', 'critical', 'debug', 'emergency', 'error', 'informational', 'notice', 'warning']),
+                remote_severity=dict(required=False, type='str', choices=['alert', 'critical', 'debug', 'emergency', 'error', 'informational', 'notice', 'warning']),
     )
 
-
-def _argument_state():
-    return dict(
-        state=dict(required=False,
-                   default="present",
-                   choices=['present', 'absent'],
-                   type='str'),
-    )
 
 
 def _argument_imc_connection():
@@ -78,7 +62,6 @@ def _argument_imc_connection():
 def _ansible_module_create():
     argument_spec = dict()
     argument_spec.update(_argument_mo())
-    argument_spec.update(_argument_state())
     argument_spec.update(_argument_imc_connection())
 
     return AnsibleModule(argument_spec,
@@ -97,24 +80,17 @@ def _get_mo_params(params):
     return args
 
 
-def setup_ipmi(server, module):
-    from imcsdk.apis.admin.ipmi import ipmi_enable
-    from imcsdk.apis.admin.ipmi import ipmi_disable
-    from imcsdk.apis.admin.ipmi import is_ipmi_enabled
+def setup_syslog(server, module):
+    from imcsdk.apis.admin.syslog import syslog_configure
+    from imcsdk.apis.admin.syslog import syslog_exists
 
     ansible = module.params
     args_mo  =  _get_mo_params(ansible)
-    exists, mo = is_ipmi_enabled(handle=server, **args_mo)
+    exists, mo = syslog_exists(handle=server, **args_mo)
 
-    if ansible["state"] == "present":
-        if module.check_mode or exists:
-            return not exists, False
-        ipmi_enable(handle=server, **args_mo)
-    else:
-        if module.check_mode or not exists:
-            return exists, False
-        ipmi_disable(server, args_mo['server_id'])
-
+    if module.check_mode or exists:
+        return not exists, False
+    syslog_configure(handle=server, **args_mo)
     return True, False
 
 
@@ -123,7 +99,7 @@ def setup(server, module):
     err = False
 
     try:
-        results["changed"], err = setup_ipmi(server, module)
+        results["changed"], err = setup_syslog(server, module)
 
     except Exception as e:
         err = True
