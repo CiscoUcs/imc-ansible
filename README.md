@@ -13,11 +13,18 @@ sudo pip install ansible
 ```
 sudo pip install imcsdk
 ```
-- clone this repository
-```
-git clone https://github.com/ciscoucs/imc-ansible
-cd imc-ansible
-```
+- install this repository as an ansible galaxy collection OR by cloning this repository
+    ```bash
+    # Install as an Ansible Galaxy collection
+    ansible-galaxy collection install git+https://github.com/CiscoUcs/imc-ansible.git --upgrade
+    ```
+    ```bash
+    # OR Install by cloning tis repository
+    git clone https://github.com/ciscoucs/imc-ansible
+    cd imc-ansible
+    ```
+
+If you install via cloning this repository:
 - You will need to run playbooks from the imc-ansible module directory so that local modules are available from the library subdirectory.
 - See https://docs.ansible.com/ansible/latest/dev_guide/developing_locally.html for more information on Ansible's use of local modules.
 
