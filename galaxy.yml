@@ -1,0 +1,14 @@
+---
+
+namespace: "cisco"
+name: "imc"
+version: 1.0.0
+readme: README.md
+authors:
+  - "Vikrant Balyan (@vvb)"
+description: "Ansible Modules for Cisco UCS IMC servers."
+license:
+  - "Apache-2.0"
+repository: "https://github.com/CiscoUcs/imc-ansible"
+
+...
